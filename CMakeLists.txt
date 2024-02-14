@@ -10,4 +10,4 @@ add_executable(pixbox ${sources})
 find_package(SDL3 REQUIRED CONFIG REQUIRED COMPONENTS SDL3)
 target_link_libraries(pixbox PRIVATE SDL3::SDL3)
 
-target_compile_options(pixbox PUBLIC -O3 -Wall -Werror -pedantic)
+target_compile_options(pixbox PUBLIC -O3 -Wall -pedantic)

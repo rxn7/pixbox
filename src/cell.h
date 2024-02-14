@@ -1,12 +1,9 @@
 #pragma once
 
-#include <stdint.h>
-
-typedef enum {
-	EMPTY,
-	SAND
-} CellType;
+#include "material.h"
 
 typedef struct {
-	CellType type : 4; // 16 max
+	MaterialID material_id : 4; // 0-16
+	uint8_t color_idx : 3; // 0-8
+	bool updated;
 } Cell;
