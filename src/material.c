@@ -113,7 +113,7 @@ const Material ICE_MATERIAL = {
     }
 };
 
-const Material *material_from_id(const uint8_t id) {
+const Material *material_from_id(uint8_t id) {
 	switch (id) {
     case ID_EMPTY:	return nullptr;
 	case ID_SAND:	return &SAND_MATERIAL;

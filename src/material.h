@@ -1,6 +1,7 @@
 #pragma once
 
 #include "color.h"
+
 #include <stdint.h>
 
 typedef enum {
@@ -37,4 +38,4 @@ extern const Material ACID_MATERIAL;
 extern const Material OIL_MATERIAL;
 extern const Material ICE_MATERIAL;
 
-const Material *material_from_id(const uint8_t id);
+const Material *material_from_id(uint8_t id);
