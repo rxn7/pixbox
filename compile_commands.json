@@ -1,0 +1,22 @@
+[
+  {
+    "arguments": [
+      "/usr/bin/clang",
+      "-isystem",
+      "/usr/include/SDL3",
+      "-g",
+      "-std=gnu2x",
+      "-O3",
+      "-Wall",
+      "-Werror",
+      "-pedantic",
+      "-c",
+      "-o",
+      "CMakeFiles/pixbox.dir/src/main.c.o",
+      "/home/rxn/dev/c/pixbox/src/main.c"
+    ],
+    "directory": "/home/rxn/dev/c/pixbox/build/debug",
+    "file": "/home/rxn/dev/c/pixbox/src/main.c",
+    "output": "/home/rxn/dev/c/pixbox/build/debug/CMakeFiles/pixbox.dir/src/main.c.o"
+  }
+]
