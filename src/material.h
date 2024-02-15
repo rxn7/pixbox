@@ -16,13 +16,7 @@ typedef enum {
 	ID_ICE,
 } MaterialID;
 
-typedef enum {
-	UNIQUE,
-	POWDER,
-	SOLID,
-	FLUID,
-	GAS
-} MaterialType;
+typedef enum { UNIQUE, POWDER, SOLID, FLUID, GAS } MaterialType;
 
 typedef struct {
 	MaterialType type;
