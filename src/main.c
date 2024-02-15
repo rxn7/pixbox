@@ -1,6 +1,6 @@
 #include "game_context.h"
 #include "grid.h"
-#include "rules.h"
+#include "simulation.h"
 
 #include <SDL.h>
 #include <SDL_assert.h>
@@ -12,9 +12,9 @@
 #include <stdlib.h>
 #include <time.h>
 
-void handle_event(GameContext *ctx, const SDL_Event *event);
-void render_cells(GameContext *ctx);
-bool update_hovered_cell(GameContext *ctx);
+static void handle_event(GameContext *ctx, const SDL_Event *event);
+static void render_cells(GameContext *ctx);
+static bool update_hovered_cell(GameContext *ctx);
 
 int main(int argc, const char **argv) {
 	srand(time(NULL));
@@ -22,7 +22,7 @@ int main(int argc, const char **argv) {
 	const uint32_t init_result = SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS);
 	SDL_assert_always(init_result == 0);
 
-	GameContext ctx = (GameContext){.window_open = true, .window = SDL_CreateWindow("Pixbox", 640, 480, SDL_WINDOW_RESIZABLE), .renderer = nullptr, .brush_size = 8};
+	GameContext ctx = (GameContext){.window_open = true, .window = SDL_CreateWindow("Pixbox", 640, 480, SDL_WINDOW_RESIZABLE), .renderer = nullptr, .brush_size = 2};
 
 	SDL_assert_always(ctx.window != nullptr);
 
@@ -34,7 +34,7 @@ int main(int argc, const char **argv) {
 
 	grid_init(ctx.cells);
 
-	SDL_Thread *rules_thread = SDL_CreateThread(handle_rules_thread, "update", (void *)&ctx);
+	SDL_Thread *simulation_thread = SDL_CreateThread(simulation_loop, "update", (void *)&ctx);
 
 	while(ctx.window_open) {
 		SDL_Event event;
@@ -57,13 +57,13 @@ int main(int argc, const char **argv) {
 	SDL_DestroyTexture(ctx.framebuffer);
 	SDL_DestroyRenderer(ctx.renderer);
 	SDL_DestroyWindow(ctx.window);
-	SDL_WaitThread(rules_thread, nullptr);
+	SDL_WaitThread(simulation_thread, nullptr);
 	SDL_Quit();
 
 	return 0;
 }
 
-void handle_event(GameContext *ctx, const SDL_Event *event) {
+static void handle_event(GameContext *ctx, const SDL_Event *event) {
 	switch(event->type) {
 	case SDL_EVENT_WINDOW_CLOSE_REQUESTED:
 	case SDL_EVENT_QUIT:
@@ -84,7 +84,7 @@ void handle_event(GameContext *ctx, const SDL_Event *event) {
 	}
 }
 
-void render_cells(GameContext *ctx) {
+static void render_cells(GameContext *ctx) {
 	SDL_Surface *surface;
 	SDL_LockTextureToSurface(ctx->framebuffer, nullptr, &surface);
 	SDL_FillSurfaceRect(surface, nullptr, 0x000000);
@@ -97,11 +97,11 @@ void render_cells(GameContext *ctx) {
 		for(uint32_t x = 0; x < GRID_WIDTH; ++x) {
 			Cell *cell = &ctx->cells[y][x];
 
-			const Material *material = material_from_id(cell->material_id);
-			if(!material) {
+			if(cell->material_id == ID_EMPTY) {
 				continue;
 			}
 
+			const Material *material = material_from_id(cell->material_id);
 			for(uint8_t c = 0; c < 3; ++c) {
 				pixels[3 * (y * surface->w + x) + c] = material->color_palette[cell->color_idx].rgb[c];
 			}
@@ -112,7 +112,7 @@ void render_cells(GameContext *ctx) {
 	SDL_UnlockTexture(ctx->framebuffer);
 }
 
-bool update_hovered_cell(GameContext *ctx) {
+static bool update_hovered_cell(GameContext *ctx) {
 	float mouse_x, mouse_y;
 	SDL_GetMouseState(&mouse_x, &mouse_y);
 	SDL_RenderCoordinatesFromWindow(ctx->renderer, mouse_x, mouse_y, &mouse_x, &mouse_y);

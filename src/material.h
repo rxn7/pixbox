@@ -5,7 +5,7 @@
 #include <stdint.h>
 
 typedef enum {
-	ID_EMPTY,
+	ID_EMPTY = 0,
 	ID_SAND,
 	ID_WATER,
 	ID_FIRE,

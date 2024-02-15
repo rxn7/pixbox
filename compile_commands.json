@@ -1,26 +1,26 @@
 [
 {
   "directory": "/home/rxn/dev/c/pixbox/build/debug",
-  "command": "/usr/bin/clang -DGRID_HEIGHT=240 -DGRID_WIDTH=320 -isystem /usr/include/SDL3 -g -std=gnu2x -O3 -Wall -pedantic -o CMakeFiles/pixbox.dir/src/grid.c.o -c /home/rxn/dev/c/pixbox/src/grid.c",
+  "command": "/usr/bin/clang -DGRID_HEIGHT=120 -DGRID_WIDTH=160 -isystem /usr/include/SDL3 -g -std=gnu2x -O3 -Wall -pedantic -g -o CMakeFiles/pixbox.dir/src/grid.c.o -c /home/rxn/dev/c/pixbox/src/grid.c",
   "file": "/home/rxn/dev/c/pixbox/src/grid.c",
   "output": "CMakeFiles/pixbox.dir/src/grid.c.o"
 },
 {
   "directory": "/home/rxn/dev/c/pixbox/build/debug",
-  "command": "/usr/bin/clang -DGRID_HEIGHT=240 -DGRID_WIDTH=320 -isystem /usr/include/SDL3 -g -std=gnu2x -O3 -Wall -pedantic -o CMakeFiles/pixbox.dir/src/main.c.o -c /home/rxn/dev/c/pixbox/src/main.c",
+  "command": "/usr/bin/clang -DGRID_HEIGHT=120 -DGRID_WIDTH=160 -isystem /usr/include/SDL3 -g -std=gnu2x -O3 -Wall -pedantic -g -o CMakeFiles/pixbox.dir/src/main.c.o -c /home/rxn/dev/c/pixbox/src/main.c",
   "file": "/home/rxn/dev/c/pixbox/src/main.c",
   "output": "CMakeFiles/pixbox.dir/src/main.c.o"
 },
 {
   "directory": "/home/rxn/dev/c/pixbox/build/debug",
-  "command": "/usr/bin/clang -DGRID_HEIGHT=240 -DGRID_WIDTH=320 -isystem /usr/include/SDL3 -g -std=gnu2x -O3 -Wall -pedantic -o CMakeFiles/pixbox.dir/src/material.c.o -c /home/rxn/dev/c/pixbox/src/material.c",
+  "command": "/usr/bin/clang -DGRID_HEIGHT=120 -DGRID_WIDTH=160 -isystem /usr/include/SDL3 -g -std=gnu2x -O3 -Wall -pedantic -g -o CMakeFiles/pixbox.dir/src/material.c.o -c /home/rxn/dev/c/pixbox/src/material.c",
   "file": "/home/rxn/dev/c/pixbox/src/material.c",
   "output": "CMakeFiles/pixbox.dir/src/material.c.o"
 },
 {
   "directory": "/home/rxn/dev/c/pixbox/build/debug",
-  "command": "/usr/bin/clang -DGRID_HEIGHT=240 -DGRID_WIDTH=320 -isystem /usr/include/SDL3 -g -std=gnu2x -O3 -Wall -pedantic -o CMakeFiles/pixbox.dir/src/rules.c.o -c /home/rxn/dev/c/pixbox/src/rules.c",
-  "file": "/home/rxn/dev/c/pixbox/src/rules.c",
-  "output": "CMakeFiles/pixbox.dir/src/rules.c.o"
+  "command": "/usr/bin/clang -DGRID_HEIGHT=120 -DGRID_WIDTH=160 -isystem /usr/include/SDL3 -g -std=gnu2x -O3 -Wall -pedantic -g -o CMakeFiles/pixbox.dir/src/simulation.c.o -c /home/rxn/dev/c/pixbox/src/simulation.c",
+  "file": "/home/rxn/dev/c/pixbox/src/simulation.c",
+  "output": "CMakeFiles/pixbox.dir/src/simulation.c.o"
 }
 ]

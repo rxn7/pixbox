@@ -12,8 +12,6 @@ const Material ICE_MATERIAL = {.type = SOLID, .color_palette = {{{188, 222, 241}
 
 const Material *material_from_id(uint8_t id) {
 	switch(id) {
-	case ID_EMPTY:
-		return nullptr;
 	case ID_SAND:
 		return &SAND_MATERIAL;
 	case ID_WATER:
