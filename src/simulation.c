@@ -7,6 +7,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+static const uint32_t UPDATES_PER_SECOND = 60;
+static const float SECONDS_PER_UPDATE = 1.0f / UPDATES_PER_SECOND;
+
 static void spawn_with_brush(GameContext *ctx) {
 	if(ctx->spawn_cell_queued) {
 		for(int32_t x_offset = -ctx->brush_size; x_offset < ctx->brush_size; ++x_offset) {
@@ -50,6 +53,7 @@ int32_t simulation_loop(void *data) {
 	bool update_map[GRID_HEIGHT][GRID_WIDTH];
 
 	while(ctx->window_open) {
+		const uint64_t start_tick = SDL_GetPerformanceCounter();
 		SDL_LockMutex(ctx->cells_mutex);
 
 		if(ctx->spawn_cell_queued) {
@@ -91,8 +95,12 @@ int32_t simulation_loop(void *data) {
 			}
 		}
 		SDL_UnlockMutex(ctx->cells_mutex);
+		const uint64_t end_tick = SDL_GetPerformanceCounter();
+		const float time_elapsed = (end_tick - start_tick) / (float)SDL_GetPerformanceFrequency();
 
-		// SDL_Delay(1000 / 60);
+		if(time_elapsed < SECONDS_PER_UPDATE) {
+			SDL_Delay((SECONDS_PER_UPDATE - time_elapsed) * 1000);
+		}
 	}
 
 	return 0;
