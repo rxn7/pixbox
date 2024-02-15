@@ -26,7 +26,7 @@ int main(int argc, const char **argv) {
 
 	SDL_assert_always(ctx.window != nullptr);
 
-	ctx.renderer = SDL_CreateRenderer(ctx.window, nullptr, SDL_RENDERER_SOFTWARE | SDL_RENDERER_PRESENTVSYNC);
+	ctx.renderer = SDL_CreateRenderer(ctx.window, nullptr, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
 	SDL_assert_always(ctx.renderer != nullptr);
 	SDL_SetRenderLogicalPresentation(ctx.renderer, GRID_WIDTH, GRID_HEIGHT, SDL_LOGICAL_PRESENTATION_LETTERBOX, SDL_SCALEMODE_NEAREST);
 

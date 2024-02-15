@@ -92,7 +92,7 @@ int32_t simulation_loop(void *data) {
 		}
 		SDL_UnlockMutex(ctx->cells_mutex);
 
-		SDL_Delay(1000 / 60);
+		// SDL_Delay(1000 / 60);
 	}
 
 	return 0;
