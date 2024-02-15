@@ -29,8 +29,5 @@ Cell *spawn_cell(Cells cells, Point p, MaterialID material_id) {
 }
 
 void delete_cell(Cells cells, Point p) {
-	cells[p.y][p.x] = (Cell){
-		.material_id = ID_EMPTY,
-		.color_idx = 0
-	};
+	cells[p.y][p.x] = (Cell){.material_id = ID_EMPTY, .color_idx = 0};
 }

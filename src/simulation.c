@@ -11,7 +11,7 @@ static void spawn_with_brush(GameContext *ctx) {
 	if(ctx->spawn_cell_queued) {
 		for(int32_t x_offset = -ctx->brush_size; x_offset < ctx->brush_size; ++x_offset) {
 			for(int32_t y_offset = -ctx->brush_size; y_offset < ctx->brush_size; ++y_offset) {
-				Point p = { ctx->hovered_x + x_offset, ctx->hovered_y + y_offset };
+				Point p = {ctx->hovered_x + x_offset, ctx->hovered_y + y_offset};
 
 				if(!is_point_valid(&p)) {
 					continue;

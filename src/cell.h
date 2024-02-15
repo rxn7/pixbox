@@ -8,4 +8,3 @@ typedef struct {
 } Cell;
 
 typedef Cell Cells[GRID_HEIGHT][GRID_WIDTH];
-
