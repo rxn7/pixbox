@@ -14,13 +14,15 @@ typedef enum {
 	ID_ACID,
 	ID_OIL,
 	ID_ICE,
+	MATERIAL_COUNT
 } MaterialID;
 
 typedef enum { UNIQUE, POWDER, SOLID, FLUID, GAS } MaterialType;
 
 typedef struct {
-	MaterialType type;
-	Color color_palette[8];
+	const char *name;
+	const MaterialType type;
+	const Color color_palette[8];
 } Material;
 
 extern const Material SAND_MATERIAL;
@@ -31,5 +33,7 @@ extern const Material WOOD_MATERIAL;
 extern const Material ACID_MATERIAL;
 extern const Material OIL_MATERIAL;
 extern const Material ICE_MATERIAL;
+
+extern const Material *MATERIALS[MATERIAL_COUNT];
 
 const Material *material_from_id(uint8_t id);

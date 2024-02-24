@@ -1,5 +1,6 @@
 #include "grid.h"
 
+#include <stdio.h>
 #include <stdlib.h>
 
 void grid_init(Cells cells) {

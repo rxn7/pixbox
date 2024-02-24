@@ -14,13 +14,12 @@ typedef struct {
 	SDL_Texture *framebuffer;
 
 	atomic_bool spawn_cell_queued;
-
-	atomic_ushort brush_size;
+	atomic_int_fast16_t brush_size;
 
 	Cell *hovered_cell;
-	atomic_uint hovered_x;
-	atomic_uint hovered_y;
+	atomic_uint_fast16_t hovered_x, hovered_y;
 
 	Cells cells;
 	SDL_Mutex *cells_mutex;
+	atomic_bool cells_updated;
 } GameContext;

@@ -1,8 +1,19 @@
 #include "material.h"
 #include <stdio.h>
 
-const Material SAND_MATERIAL = {.type = POWDER, .color_palette = {{{194, 178, 128}}, {{209, 190, 141}}, {{224, 203, 154}}, {{239, 216, 167}}, {{254, 229, 180}}, {{244, 220, 165}}, {{234, 211, 150}}, {{224, 202, 135}}}};
-const Material WATER_MATERIAL = {.type = FLUID, .color_palette = {{{0, 105, 148}}, {{0, 105, 148}}, {{0, 105, 148}}, {{0, 105, 148}}, {{0, 105, 148}}, {{0, 105, 148}}, {{0, 105, 148}}, {{0, 105, 148}}}};
+const Material *MATERIALS[MATERIAL_COUNT] = {
+	&SAND_MATERIAL,
+	&WATER_MATERIAL,
+	&FIRE_MATERIAL,
+	&GAS_MATERIAL,
+	&WOOD_MATERIAL,
+	&ACID_MATERIAL,
+	&OIL_MATERIAL,
+	&ICE_MATERIAL,
+};
+
+const Material SAND_MATERIAL = {.name = "sand", .type = POWDER, .color_palette = {{{194, 178, 128}}, {{209, 190, 141}}, {{224, 203, 154}}, {{239, 216, 167}}, {{254, 229, 180}}, {{244, 220, 165}}, {{234, 211, 150}}, {{224, 202, 135}}}};
+const Material WATER_MATERIAL = {.name="water", .type = FLUID, .color_palette = {{{0, 105, 148}}, {{0, 105, 148}}, {{0, 105, 148}}, {{0, 105, 148}}, {{0, 105, 148}}, {{0, 105, 148}}, {{0, 105, 148}}, {{0, 105, 148}}}};
 const Material FIRE_MATERIAL = {.type = UNIQUE, .color_palette = {{{205, 38, 38}}, {{255, 48, 48}}, {{255, 58, 58}}, {{255, 68, 68}}, {{255, 78, 78}}, {{235, 71, 71}}, {{215, 64, 64}}, {{195, 57, 57}}}};
 const Material GAS_MATERIAL = {.type = GAS, .color_palette = {{{152, 152, 152}}, {{177, 177, 177}}, {{202, 202, 202}}, {{227, 227, 227}}, {{252, 252, 252}}, {{232, 232, 232}}, {{212, 212, 212}}, {{192, 192, 192}}}};
 const Material WOOD_MATERIAL = {.type = SOLID, .color_palette = {{{101, 67, 33}}, {{118, 78, 39}}, {{135, 89, 45}}, {{152, 100, 51}}, {{169, 111, 57}}, {{156, 102, 53}}, {{143, 93, 49}}, {{130, 84, 45}}}};

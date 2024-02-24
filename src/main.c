@@ -1,10 +1,13 @@
+#include "color.h"
 #include "game_context.h"
 #include "grid.h"
+#include "render.h"
 #include "simulation.h"
 
 #include <SDL.h>
 #include <SDL_assert.h>
 #include <SDL_mutex.h>
+#include <SDL_oldnames.h>
 #include <SDL_render.h>
 #include <SDL_thread.h>
 
@@ -13,6 +16,7 @@
 #include <time.h>
 
 static void handle_event(GameContext *ctx, const SDL_Event *event);
+static void render(GameContext *ctx);
 static void render_cells(GameContext *ctx);
 static bool update_hovered_cell(GameContext *ctx);
 
@@ -22,7 +26,7 @@ int main(int argc, const char **argv) {
 	const uint32_t init_result = SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS);
 	SDL_assert_always(init_result == 0);
 
-	GameContext ctx = (GameContext){.window_open = true, .window = SDL_CreateWindow("Pixbox", 640, 480, SDL_WINDOW_RESIZABLE), .renderer = nullptr, .brush_size = 2};
+	GameContext ctx = (GameContext){.window_open = true, .window = SDL_CreateWindow("Pixbox", 640, 480, SDL_WINDOW_RESIZABLE), .renderer = nullptr, .brush_size = 2, .cells_updated = true};
 
 	SDL_assert_always(ctx.window != nullptr);
 
@@ -42,16 +46,7 @@ int main(int argc, const char **argv) {
 			handle_event(&ctx, &event);
 		}
 
-		SDL_SetRenderDrawColor(ctx.renderer, 0, 0, 0, 255);
-		SDL_RenderClear(ctx.renderer);
-
-		render_cells(&ctx);
-		SDL_RenderTexture(ctx.renderer, ctx.framebuffer, nullptr, nullptr);
-
-		SDL_SetRenderDrawColor(ctx.renderer, 255, 255, 255, 255);
-		SDL_RenderRect(ctx.renderer, &(SDL_FRect){.x = ctx.hovered_x - ctx.brush_size, .y = ctx.hovered_y - ctx.brush_size, .w = ctx.brush_size * 2, .h = ctx.brush_size * 2});
-
-		SDL_RenderPresent(ctx.renderer);
+		render(&ctx);
 	}
 
 	SDL_DestroyTexture(ctx.framebuffer);
@@ -78,10 +73,43 @@ static void handle_event(GameContext *ctx, const SDL_Event *event) {
 		ctx->spawn_cell_queued = false;
 		break;
 
+	case SDL_EVENT_MOUSE_WHEEL:
+		if(event->wheel.y < 0) {
+			ctx->brush_size = SDL_max(1, ctx->brush_size - 1);
+		} else if (event->wheel.y > 0) {
+			ctx->brush_size = SDL_min(GRID_HEIGHT, ctx->brush_size + 1);	
+		}
+		break;
+
 	case SDL_EVENT_MOUSE_MOTION:
 		update_hovered_cell(ctx);
 		break;
+
+	case SDL_EVENT_KEY_DOWN:
+		switch(event->key.keysym.sym) {
+			case SDLK_r:
+				grid_init(ctx->cells);
+				break;
+		}
+		break;
 	}
+}
+
+static void render(GameContext *ctx) {
+	SDL_SetRenderDrawColor(ctx->renderer, 0, 0, 0, 255);
+	SDL_RenderClear(ctx->renderer);
+
+	if(ctx->cells_updated) {
+		render_cells(ctx);
+		ctx->cells_updated = false;
+	}
+
+	SDL_RenderTexture(ctx->renderer, ctx->framebuffer, nullptr, nullptr);
+
+	SDL_SetRenderDrawColor(ctx->renderer, 255, 255, 255, 255);
+	render_cirlce(ctx->renderer, (Point){ctx->hovered_x, ctx->hovered_y}, ctx->brush_size);
+
+	SDL_RenderPresent(ctx->renderer);
 }
 
 static void render_cells(GameContext *ctx) {
@@ -92,7 +120,6 @@ static void render_cells(GameContext *ctx) {
 	uint8_t *pixels = (uint8_t *)surface->pixels;
 
 	SDL_LockMutex(ctx->cells_mutex);
-
 	for(uint32_t y = 0; y < GRID_HEIGHT; ++y) {
 		for(uint32_t x = 0; x < GRID_WIDTH; ++x) {
 			Cell *cell = &ctx->cells[y][x];
@@ -102,8 +129,9 @@ static void render_cells(GameContext *ctx) {
 			}
 
 			const Material *material = material_from_id(cell->material_id);
+			const Color color = material->color_palette[cell->color_idx];
 			for(uint8_t c = 0; c < 3; ++c) {
-				pixels[3 * (y * surface->w + x) + c] = material->color_palette[cell->color_idx].rgb[c];
+				pixels[3 * (y * surface->w + x) + c] = color.rgb[c];
 			}
 		}
 	}
