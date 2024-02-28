@@ -3,13 +3,15 @@
 #include <math.h>
 #include <stdint.h>
 
+typedef int16_t PointComponent;
+
 typedef struct {
-	int16_t x;
-	int16_t y;
+	PointComponent x;
+	PointComponent y;
 } Point;
 
 inline bool point_is_valid(const Point p) {
-	return p.x > 0 && p.x < GRID_WIDTH && p.y > 0 && p.y < GRID_HEIGHT;
+	return p.x >= 0 && p.x < GRID_WIDTH && p.y >= 0 && p.y < GRID_HEIGHT;
 }
 
 inline float point_distance(const Point a, const Point b) {

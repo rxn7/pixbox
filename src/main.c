@@ -257,15 +257,16 @@ static void update_hovered_cell(GameContext *ctx) {
 	int32_t window_w, window_h;
 	SDL_GetWindowSizeInPixels(ctx->window, &window_w, &window_h);
 
-	float x = (ctx->mouse_x - ctx->framebuffer_rect.x) / ctx->framebuffer_pixel_size_ratio;
-	float y = (ctx->mouse_y - ctx->framebuffer_rect.y) / ctx->framebuffer_pixel_size_ratio;
+	const float x = (ctx->mouse_x - ctx->framebuffer_rect.x) / ctx->framebuffer_pixel_size_ratio;
+	const float y = (ctx->mouse_y - ctx->framebuffer_rect.y) / ctx->framebuffer_pixel_size_ratio;
+
 	if(x < 0 || x >= GRID_WIDTH || y < 0 || y >= GRID_HEIGHT) {
 		ctx->hovered_cell = nullptr;
 		return;
 	}
 
-	ctx->hovered_x = (uint16_t)x;
-	ctx->hovered_y = (uint16_t)y;
+	ctx->hovered_x = (PointComponent)(x);
+	ctx->hovered_y = (PointComponent)(y);
 	ctx->hovered_cell = cell_at(ctx->cells, (Point){ x, y });
 }
 

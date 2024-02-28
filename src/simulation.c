@@ -26,7 +26,7 @@ static void handle_queued_action(GameContext *ctx) {
 			}
 
 			const float distance = point_distance(p, (Point){ ctx->hovered_x, ctx->hovered_y });
-			if(distance > ctx->brush_size) {
+			if(distance >= ctx->brush_size) {
 				continue;
 			}
 
@@ -55,7 +55,7 @@ static Point simulate_gas(Cells cells, Point p) {
 }
 
 static Point simulate_powder(Cells cells, Point p) {
-	if(p.y >= GRID_HEIGHT - 1) {
+	if(p.y >= GRID_HEIGHT-1) {
 		return p;
 	}
 
@@ -94,8 +94,8 @@ int32_t simulation_loop(void *data) {
 
 		bool update_map[GRID_HEIGHT][GRID_WIDTH] = { 0 };
 
-		for(uint16_t y = GRID_HEIGHT-1; y>0; y--) {
-			for(uint16_t x = 0; x < GRID_WIDTH; ++x) {
+		for(PointComponent y = GRID_HEIGHT-1; y>=0; y--) {
+			for(PointComponent x = 0; x < GRID_WIDTH; ++x) {
 				if(update_map[y][x]) {
 					continue;
 				}
