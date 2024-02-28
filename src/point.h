@@ -4,12 +4,12 @@
 #include <stdint.h>
 
 typedef struct {
-	uint16_t x;
-	uint16_t y;
+	int16_t x;
+	int16_t y;
 } Point;
 
 inline bool point_is_valid(const Point p) {
-	return p.x < GRID_WIDTH && p.y < GRID_HEIGHT;
+	return p.x > 0 && p.x < GRID_WIDTH && p.y > 0 && p.y < GRID_HEIGHT;
 }
 
 inline float point_distance(const Point a, const Point b) {

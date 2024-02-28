@@ -3,12 +3,6 @@
 
 #include <stdlib.h>
 
-#define MATERIAL_ENTRY_ICON_GAP 8
-#define MATERIAL_ENTRY_ICON_SIZE 64
-#define MATERIAL_ENTRY_ICON_PIXEL_SIZE 16
-#define MATERIAL_ENTRY_TEXT_SIZE 8
-#define SELECTED_MATERIAL_ENTRY_OUTLINE 5
-
 static void material_selector_entry_init(MaterialSelectorEntry *entry, const MaterialID material_id, GameContext *ctx) {
 	entry->material_id = material_id;
 	const Material *material = material_from_id(material_id);
@@ -55,9 +49,9 @@ static bool material_selector_entry_render(MaterialSelectorEntry *entry, GameCon
 void material_selector_init(MaterialSelector *selector, GameContext *ctx) {
 	memset(selector->entries, 0, sizeof(selector->entries));
 
-	selector->total_width = (MATERIAL_ENTRY_ICON_SIZE + MATERIAL_ENTRY_ICON_GAP) * MATERIAL_COUNT;
+	selector->total_width = MATERIAL_ENTRY_ICON_SIZE * MATERIAL_COUNT + MATERIAL_ENTRY_ICON_GAP * (MATERIAL_COUNT - 1);
 
-	for(uint8_t i = 1; i < MATERIAL_COUNT; ++i) {
+	for(uint8_t i = 1; i < MATERIAL_ID_LAST; ++i) {
 		material_selector_entry_init(&selector->entries[i - 1], i, ctx);
 	}
 }

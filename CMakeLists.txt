@@ -7,10 +7,12 @@ project(pixbox VERSION 0.0 LANGUAGES C)
 file(GLOB_RECURSE sources CONFIGURE_DEPENDS src/*.c)
 add_executable(pixbox ${sources})
 
-find_package(SDL3 REQUIRED CONFIG REQUIRED COMPONENTS SDL3)
+add_subdirectory(vendor/SDL3 EXCLUDE_FROM_ALL)
 target_link_libraries(pixbox PRIVATE SDL3::SDL3)
+add_subdirectory(vendor/SDL3_ttf EXCLUDE_FROM_ALL)
+target_link_libraries(pixbox PRIVATE SDL3_ttf::SDL3_ttf)
 
 target_link_libraries(pixbox PRIVATE m)
 
-target_compile_definitions(pixbox PRIVATE GRID_WIDTH=1280 GRID_HEIGHT=720)
+target_compile_definitions(pixbox PRIVATE GRID_WIDTH=640 GRID_HEIGHT=480)
 target_compile_options(pixbox PUBLIC -O3 -Wall -pedantic -g)

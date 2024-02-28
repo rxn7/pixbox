@@ -2,6 +2,7 @@
 
 #include "cell.h"
 #include "material_selector.h"
+#include "performance_stats.h"
 
 #include <SDL_mutex.h>
 #include <SDL_render.h>
@@ -11,11 +12,11 @@
 typedef enum { ACTION_NONE = 0, ACTION_SPAWN, ACTION_ERASE } GameAction;
 
 typedef struct GameContext {
-	const uint8_t grid_w, grid_h;
-
-	_Atomic bool window_open;
+	_Atomic bool is_paused;
+	_Atomic bool is_window_open;
 	SDL_Window *window;
 	SDL_Renderer *renderer;
+	SDL_Cursor *hover_cursor, *normal_cursor;
 
 	SDL_Texture *framebuffer;
 	SDL_FRect framebuffer_rect;
@@ -35,6 +36,5 @@ typedef struct GameContext {
 	SDL_Mutex *cells_mutex;
 
 	MaterialSelector material_selector;
-
-	SDL_Cursor *hover_cursor, *normal_cursor;
+	PerformanceStats performance_stats;
 } GameContext;

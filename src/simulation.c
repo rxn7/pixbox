@@ -9,7 +9,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-static const uint32_t UPDATES_PER_SECOND = 60;
+static const uint32_t UPDATES_PER_SECOND = 100;
 static const float SECONDS_PER_UPDATE = 1.0f / UPDATES_PER_SECOND;
 
 static void handle_queued_action(GameContext *ctx) {
@@ -46,34 +46,11 @@ static void handle_queued_action(GameContext *ctx) {
 	}
 }
 
+static Point simulate_fluid(Cells cells, Point p) {
+	return p;
+}
+
 static Point simulate_gas(Cells cells, Point p) {
-	if(p.y == 0) {
-		return p;
-	}
-
-	if(cells[p.y - 1][p.x].material_id == ID_EMPTY) {
-		const Point new_point = (Point){ p.x, p.y - 1 };
-		move_cell(cells, p, new_point);
-		return new_point;
-	}
-
-	int8_t offset = (int)(round(rand() / (float)RAND_MAX) * 2 - 1);
-	for(uint8_t i = 0; i < 2; ++i) {
-		if(p.x + offset >= 0 && p.x + offset < GRID_WIDTH) {
-			if(cells[p.y - 1][p.x + offset].material_id == ID_EMPTY) {
-				const Point new_point = (Point){ p.x + offset, p.y - 1 };
-				move_cell(cells, p, new_point);
-				return new_point;
-			}
-
-			if(cells[p.y][p.x + offset].material_id == ID_EMPTY) {
-				const Point new_point = (Point){ p.x + offset, p.y };
-				move_cell(cells, p, new_point);
-				return new_point;
-			}
-		}
-	}
-
 	return p;
 }
 
@@ -90,8 +67,8 @@ static Point simulate_powder(Cells cells, Point p) {
 
 	int8_t offset = (int)(round(rand() / (float)RAND_MAX) * 2 - 1);
 	for(uint8_t i = 0; i < 2; ++i) {
-		if(p.x + offset >= 0 && p.x + offset < GRID_WIDTH && (cells[p.y + 1][p.x + offset].material_id == ID_EMPTY)) {
-			Point new_point = (Point){ p.x + offset, p.y + 1 };
+		Point new_point = (Point){ p.x + offset, p.y + 1 };
+		if(p.x + offset >= 0 && p.x + offset < GRID_WIDTH && (cell_at(cells, new_point)->material_id == ID_EMPTY)) {
 			move_cell(cells, p, new_point);
 			return new_point;
 		}
@@ -105,15 +82,19 @@ static Point simulate_powder(Cells cells, Point p) {
 int32_t simulation_loop(void *data) {
 	GameContext *ctx = (GameContext *)data;
 
-	while(ctx->window_open) {
+	while(ctx->is_window_open) {
 		const uint64_t start_tick = SDL_GetPerformanceCounter();
-		SDL_LockMutex(ctx->cells_mutex);
 
+		SDL_LockMutex(ctx->cells_mutex);
 		handle_queued_action(ctx);
+
+		if(ctx->is_paused) {
+			goto end_step;
+		}
 
 		bool update_map[GRID_HEIGHT][GRID_WIDTH] = { 0 };
 
-		for(uint16_t y = 0; y < GRID_HEIGHT; ++y) {
+		for(uint16_t y = GRID_HEIGHT-1; y>0; y--) {
 			for(uint16_t x = 0; x < GRID_WIDTH; ++x) {
 				if(update_map[y][x]) {
 					continue;
@@ -132,6 +113,7 @@ int32_t simulation_loop(void *data) {
 				case SOLID:
 					break;
 				case FLUID:
+					point = simulate_fluid(ctx->cells, point);
 					break;
 				case POWDER:
 					point = simulate_powder(ctx->cells, point);
@@ -147,6 +129,8 @@ int32_t simulation_loop(void *data) {
 			}
 		}
 
+
+end_step:;
 		SDL_UnlockMutex(ctx->cells_mutex);
 
 		const uint64_t end_tick = SDL_GetPerformanceCounter();
@@ -155,6 +139,8 @@ int32_t simulation_loop(void *data) {
 		if(time_elapsed < SECONDS_PER_UPDATE) {
 			SDL_Delay((SECONDS_PER_UPDATE - time_elapsed) * 1000);
 		}
+
+		ctx->performance_stats.simulation_step_time = time_elapsed * 1000;
 	}
 
 	return 0;

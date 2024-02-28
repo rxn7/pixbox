@@ -22,9 +22,25 @@ typedef enum {
 typedef enum { UNIQUE, POWDER, SOLID, FLUID, GAS } MaterialType;
 
 typedef struct {
+	uint8_t max_age;
+} GasMaterialData;
+
+typedef struct {
+} FluidMaterialData;
+
+typedef struct {
+} SolidMaterialData;
+
+typedef struct {
 	const char *name;
 	const MaterialType type;
 	const Color color_palette[8];
+
+	union {
+		GasMaterialData gas;
+		FluidMaterialData fluid;
+		SolidMaterialData solid;
+	};
 } Material;
 
 extern const Material SAND_MATERIAL;

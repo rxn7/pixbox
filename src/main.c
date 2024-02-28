@@ -17,18 +17,35 @@
 #include <string.h>
 #include <time.h>
 
+static void start();
 static void handle_event(GameContext *ctx, const SDL_Event *event);
 static void render(GameContext *ctx);
 static void render_cells(GameContext *ctx);
 static void update_hovered_cell(GameContext *ctx);
+static uint32_t process_performance_stats(uint32_t interval, void *param);
 
 int main(int argc, const char **argv) {
 	srand(time(NULL));
 
+#ifndef NDEBUG
+	const size_t cell_array_size = GRID_WIDTH * GRID_HEIGHT * sizeof(Cell);
+	printf("Grid width:			%10u\n", GRID_WIDTH);
+	printf("Grid height:		%10u\n", GRID_HEIGHT);
+	printf("Cell struct size:	%10lu bytes\n", sizeof(Cell));
+	printf("Cell array size:	%10lu bytes\n", cell_array_size);
+	printf("Framebuffer size:	%10lu bytes\n", cell_array_size);
+#endif
+
+	start();
+
+	return 0;
+}
+
+static void start() {
 	const uint32_t init_result = SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS);
 	SDL_assert_always(init_result == 0);
 
-	GameContext ctx = (GameContext){ .window_open = true, .window = SDL_CreateWindow("Pixbox", 640, 480, SDL_WINDOW_RESIZABLE), .renderer = nullptr, .brush_size = 2, .selected_material = ID_SAND, .framebuffer_pixel_size_ratio = 1.0f, .hover_cursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_HAND), .normal_cursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_ARROW) };
+	GameContext ctx = (GameContext){ .is_window_open = true, .window = SDL_CreateWindow("Pixbox", 640, 480, SDL_WINDOW_RESIZABLE), .renderer = nullptr, .brush_size = 2, .selected_material = ID_SAND, .framebuffer_pixel_size_ratio = 1.0f, .hover_cursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_HAND), .normal_cursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_ARROW), .is_paused = false };
 
 	SDL_assert_always(ctx.window != nullptr);
 
@@ -43,7 +60,16 @@ int main(int argc, const char **argv) {
 
 	SDL_Thread *simulation_thread = SDL_CreateThread(simulation_loop, "update", (void *)&ctx);
 
-	while(ctx.window_open) {
+	SDL_TimerID process_performance_stats_timer = SDL_AddTimer(1000, process_performance_stats, (void *)&ctx);
+
+	uint64_t now = SDL_GetPerformanceCounter();
+	uint64_t last_frame_tick = now;
+	while(ctx.is_window_open) {
+		now = SDL_GetPerformanceCounter();
+		ctx.performance_stats.frame_time = (float)(now - last_frame_tick) / SDL_GetPerformanceFrequency() * 1000;
+		ctx.performance_stats.frame_count++;
+		last_frame_tick = now;
+
 		SDL_Event event;
 		while(SDL_PollEvent(&event)) {
 			handle_event(&ctx, &event);
@@ -52,6 +78,7 @@ int main(int argc, const char **argv) {
 		render(&ctx);
 	}
 
+	SDL_RemoveTimer(process_performance_stats_timer);
 	SDL_DestroyTexture(ctx.framebuffer);
 	SDL_DestroyCursor(ctx.hover_cursor);
 	SDL_DestroyCursor(ctx.normal_cursor);
@@ -60,15 +87,13 @@ int main(int argc, const char **argv) {
 	material_selector_destroy(&ctx.material_selector);
 	SDL_WaitThread(simulation_thread, nullptr);
 	SDL_Quit();
-
-	return 0;
 }
 
 static void handle_event(GameContext *ctx, const SDL_Event *event) {
 	switch(event->type) {
 	case SDL_EVENT_WINDOW_CLOSE_REQUESTED:
 	case SDL_EVENT_QUIT:
-		ctx->window_open = false;
+		ctx->is_window_open = false;
 		break;
 
 	case SDL_EVENT_MOUSE_BUTTON_DOWN:
@@ -109,6 +134,9 @@ static void handle_event(GameContext *ctx, const SDL_Event *event) {
 		case SDLK_r:
 			grid_init(ctx->cells);
 			break;
+		case SDLK_ESCAPE:
+			ctx->is_paused = !ctx->is_paused;
+			break;
 		}
 		break;
 
@@ -116,12 +144,16 @@ static void handle_event(GameContext *ctx, const SDL_Event *event) {
 		ctx->window_w = event->window.data1;
 		ctx->window_h = event->window.data2;
 
-		if(ctx->window_w < ctx->window_h) {
+		const float framebuffer_available_height = ctx->window_h - MATERIAL_SELECTOR_HEIGHT;
+		const float available_size_ratio = ctx->window_w / (float)framebuffer_available_height;
+		const float grid_ratio = GRID_WIDTH / (float)GRID_HEIGHT;
+
+		if(available_size_ratio < grid_ratio) {
 			ctx->framebuffer_pixel_size_ratio = ctx->window_w / (float)GRID_WIDTH;
 			ctx->framebuffer_rect.x = 0.0f;
-			ctx->framebuffer_rect.y = (float)(ctx->window_h - GRID_HEIGHT * ctx->framebuffer_pixel_size_ratio) * 0.5f;
+			ctx->framebuffer_rect.y = (float)(framebuffer_available_height - GRID_HEIGHT * ctx->framebuffer_pixel_size_ratio) * 0.5f;
 		} else {
-			ctx->framebuffer_pixel_size_ratio = ctx->window_h / (float)GRID_HEIGHT;
+			ctx->framebuffer_pixel_size_ratio = framebuffer_available_height / (float)GRID_HEIGHT;
 			ctx->framebuffer_rect.x = (float)(ctx->window_w - GRID_WIDTH * ctx->framebuffer_pixel_size_ratio) * 0.5f;
 			ctx->framebuffer_rect.y = 0.0f;
 		}
@@ -140,8 +172,9 @@ static void render(GameContext *ctx) {
 	render_cells(ctx);
 
 	SDL_RenderTexture(ctx->renderer, ctx->framebuffer, nullptr, &ctx->framebuffer_rect);
+	SDL_SetRenderDrawColor(ctx->renderer, 150, 150, 150, 255);
+	SDL_RenderRect(ctx->renderer, &ctx->framebuffer_rect);
 
-	SDL_SetRenderDrawColor(ctx->renderer, 255, 255, 255, 255);
 	render_cirlce(ctx->renderer, (Point){ ctx->mouse_x, ctx->mouse_y }, ctx->brush_size * ctx->framebuffer_pixel_size_ratio);
 
 	material_selector_render(&ctx->material_selector, ctx);
@@ -191,4 +224,17 @@ static void update_hovered_cell(GameContext *ctx) {
 	ctx->hovered_x = (uint16_t)x;
 	ctx->hovered_y = (uint16_t)y;
 	ctx->hovered_cell = cell_at(ctx->cells, (Point){ x, y });
+}
+
+static uint32_t process_performance_stats(uint32_t interval, void *param) {
+	GameContext *ctx = (GameContext *)param;
+	puts("\n====================== PERFORMANCE STATS ======================");
+	printf("FPS: %u\n", (uint32_t)(ctx->performance_stats.frame_count / (interval * 0.001f)));
+	printf("Frame time: %u ms\n", ctx->performance_stats.frame_time);
+	printf("Simulation step time: %u ms\n", ctx->performance_stats.simulation_step_time);
+	puts("================================================================\n");
+
+	ctx->performance_stats.frame_count = 0;
+
+	return interval;
 }
