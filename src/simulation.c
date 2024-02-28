@@ -32,7 +32,7 @@ static void handle_queued_action(GameContext *ctx) {
 
 			switch((GameAction)ctx->queued_action) {
 			case ACTION_SPAWN:
-				spawn_cell(ctx->cells, p, ctx->selected_material);
+				spawn_cell(ctx->cells, p, ctx->selected_material_id);
 				break;
 
 			case ACTION_ERASE:

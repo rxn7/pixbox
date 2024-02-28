@@ -14,7 +14,7 @@
 typedef struct GameContext GameContext;
 
 typedef struct {
-	MaterialID material_id;
+	const Material *material;
 	SDL_Texture *icon_texture;
 } MaterialSelectorEntry;
 

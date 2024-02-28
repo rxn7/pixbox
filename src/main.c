@@ -17,7 +17,9 @@
 #include <string.h>
 #include <time.h>
 
-static void start();
+static void start(GameContext *ctx);
+static void init(GameContext *ctx);
+static void cleanup(GameContext *ctx);
 static void handle_event(GameContext *ctx, const SDL_Event *event);
 static void render(GameContext *ctx);
 static void render_cells(GameContext *ctx);
@@ -36,74 +38,90 @@ int main(int argc, const char **argv) {
 	printf("Framebuffer size:	%10lu bytes\n", cell_array_size);
 #endif
 
-	start();
+	GameContext ctx;
+	init(&ctx);
+	start(&ctx);
+	cleanup(&ctx);
 
 	return 0;
 }
 
-static void start() {
-	const uint32_t init_result = SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS);
-	SDL_assert_always(init_result == 0);
-
-	GameContext ctx = (GameContext){ .is_window_open = true, .renderer = nullptr, .brush_size = 2, .selected_material = ID_SAND, .framebuffer_pixel_size_ratio = 1.0f, .is_paused = false };
-
-	ctx.window = SDL_CreateWindow("Pixbox", 640, 480, SDL_WINDOW_RESIZABLE);
-	SDL_assert_always(ctx.window != nullptr);
-
-	ctx.hover_cursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_HAND);
-	ctx.normal_cursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_ARROW);
-
-	const uint32_t ttf_init_result = TTF_Init();
-	SDL_assert_always(ttf_init_result == 0);
-	ctx.font = TTF_OpenFont("assets/Romulus.ttf", SELECTED_MATERIAL_TEXT_SIZE);
-	SDL_assert_always(ctx.font != nullptr);
-
-	ctx.renderer = SDL_CreateRenderer(ctx.window, nullptr, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
-	SDL_assert_always(ctx.renderer != nullptr);
-
-	ctx.framebuffer = SDL_CreateTexture(ctx.renderer, SDL_PIXELFORMAT_RGB24, SDL_TEXTUREACCESS_STREAMING, GRID_WIDTH, GRID_HEIGHT);
-	SDL_SetTextureScaleMode(ctx.framebuffer, SDL_SCALEMODE_NEAREST);
-
-	{
-		SDL_Surface *pause_text_surface = TTF_RenderText_Solid(ctx.font, "-paused-", (SDL_Color){ 255, 255, 255, 255 });
-		ctx.pause_text_rect.w = pause_text_surface->w;
-		ctx.pause_text_rect.h = pause_text_surface->h;
-		ctx.pause_text_texture = SDL_CreateTextureFromSurface(ctx.renderer, pause_text_surface);
-		SDL_DestroySurface(pause_text_surface);
-	}
-
-	grid_init(ctx.cells);
-	material_selector_init(&ctx.material_selector, &ctx);
-
-	SDL_Thread *simulation_thread = SDL_CreateThread(simulation_loop, "update", (void *)&ctx);
-	SDL_TimerID process_performance_stats_timer = SDL_AddTimer(1000, process_performance_stats, (void *)&ctx);
+static void start(GameContext *ctx) {
+	SDL_Thread *simulation_thread = SDL_CreateThread(simulation_loop, "update", (void *)ctx);
+	const SDL_TimerID process_performance_stats_timer = SDL_AddTimer(1000, process_performance_stats, (void *)ctx);
 
 	uint64_t now = SDL_GetPerformanceCounter();
 	uint64_t last_frame_tick = now;
-	while(ctx.is_window_open) {
+	while(ctx->is_window_open) {
 		now = SDL_GetPerformanceCounter();
-		ctx.performance_stats.frame_time = (float)(now - last_frame_tick) / SDL_GetPerformanceFrequency() * 1000;
-		ctx.performance_stats.frame_count++;
+		ctx->performance_stats.frame_time = (float)(now - last_frame_tick) / SDL_GetPerformanceFrequency() * 1000;
+		ctx->performance_stats.frame_count++;
 		last_frame_tick = now;
 
 		SDL_Event event;
 		while(SDL_PollEvent(&event)) {
-			handle_event(&ctx, &event);
+			handle_event(ctx, &event);
 		}
 
-		render(&ctx);
+		render(ctx);
+
+		SDL_SetCursor(ctx->material_selector.hovered_entry != nullptr ? ctx->hover_cursor : ctx->normal_cursor);
 	}
 
-	material_selector_destroy(&ctx.material_selector);
-	TTF_CloseFont(ctx.font);
 	SDL_RemoveTimer(process_performance_stats_timer);
-	SDL_DestroyTexture(ctx.framebuffer);
-	SDL_DestroyTexture(ctx.pause_text_texture);
-	SDL_DestroyCursor(ctx.hover_cursor);
-	SDL_DestroyCursor(ctx.normal_cursor);
-	SDL_DestroyRenderer(ctx.renderer);
-	SDL_DestroyWindow(ctx.window);
 	SDL_WaitThread(simulation_thread, nullptr);
+}
+
+static void init(GameContext *ctx) {
+	const uint32_t init_result = SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS);
+	SDL_assert_always(init_result == 0);
+
+	ctx->cells_mutex = SDL_CreateMutex();
+	ctx->is_window_open = true;
+	ctx->brush_size = 2;
+	ctx->selected_material_id = ID_SAND;
+	ctx->framebuffer_pixel_size_ratio = 1.0f;
+	ctx->is_paused = false;
+
+	ctx->window = SDL_CreateWindow("Pixbox", 640, 480, SDL_WINDOW_RESIZABLE);
+	SDL_assert_always(ctx->window != nullptr);
+
+	ctx->hover_cursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_HAND);
+	ctx->normal_cursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_ARROW);
+
+	const uint32_t ttf_init_result = TTF_Init();
+	SDL_assert_always(ttf_init_result == 0);
+	ctx->font = TTF_OpenFont("assets/Romulus.ttf", SELECTED_MATERIAL_TEXT_SIZE);
+	SDL_assert_always(ctx->font != nullptr);
+
+	ctx->renderer = SDL_CreateRenderer(ctx->window, nullptr, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
+	SDL_assert_always(ctx->renderer != nullptr);
+
+	ctx->framebuffer = SDL_CreateTexture(ctx->renderer, SDL_PIXELFORMAT_RGB24, SDL_TEXTUREACCESS_STREAMING, GRID_WIDTH, GRID_HEIGHT);
+	SDL_SetTextureScaleMode(ctx->framebuffer, SDL_SCALEMODE_NEAREST);
+
+	{
+		SDL_Surface *pause_text_surface = TTF_RenderText_Solid(ctx->font, "-paused-", (SDL_Color){ 255, 255, 255, 255 });
+		ctx->pause_text_rect.w = pause_text_surface->w;
+		ctx->pause_text_rect.h = pause_text_surface->h;
+		ctx->pause_text_texture = SDL_CreateTextureFromSurface(ctx->renderer, pause_text_surface);
+		SDL_DestroySurface(pause_text_surface);
+	}
+
+	grid_init(ctx->cells);
+	material_selector_init(&ctx->material_selector, ctx);
+}
+
+static void cleanup(GameContext *ctx) {
+	material_selector_destroy(&ctx->material_selector);
+	TTF_CloseFont(ctx->font);
+	SDL_DestroyTexture(ctx->framebuffer);
+	SDL_DestroyTexture(ctx->pause_text_texture);
+	SDL_DestroyCursor(ctx->hover_cursor);
+	SDL_DestroyCursor(ctx->normal_cursor);
+	SDL_DestroyRenderer(ctx->renderer);
+	SDL_DestroyWindow(ctx->window);
+	SDL_DestroyMutex(ctx->cells_mutex);
 	SDL_Quit();
 }
 
@@ -118,7 +136,8 @@ static void handle_event(GameContext *ctx, const SDL_Event *event) {
 		switch(event->button.button) {
 		case SDL_BUTTON_LEFT:
 			if(ctx->material_selector.hovered_entry != nullptr) {
-				ctx->selected_material = ctx->material_selector.hovered_entry->material_id;
+				ctx->selected_material_id = ctx->material_selector.hovered_entry->material->id;
+				ctx->material_selector.queue_text_redraw = true;
 				break;
 			}
 			ctx->queued_action = ACTION_SPAWN;

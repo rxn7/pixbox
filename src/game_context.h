@@ -28,7 +28,7 @@ typedef struct GameContext {
 	float framebuffer_pixel_size_ratio;
 
 	_Atomic GameAction queued_action;
-	_Atomic MaterialID selected_material;
+	_Atomic MaterialID selected_material_id;
 	_Atomic uint16_t brush_size;
 
 	Cell *hovered_cell;

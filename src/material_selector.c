@@ -5,7 +5,7 @@
 #include <stdlib.h>
 
 static void render_selected_material_text(MaterialSelector *selector, GameContext *ctx) {
-	const char *text = material_from_id(ctx->selected_material)->name; 
+	const char *text = material_from_id(ctx->selected_material_id)->name; 
 	SDL_Surface *text_surface = TTF_RenderText_Solid(ctx->font, text, (SDL_Color){ 255, 255, 255, 255 });
 
 	if(selector->text_texture != nullptr) {
@@ -21,8 +21,8 @@ static void render_selected_material_text(MaterialSelector *selector, GameContex
 }
 
 static void material_selector_entry_init(MaterialSelectorEntry *entry, const MaterialID material_id, GameContext *ctx) {
-	entry->material_id = material_id;
 	const Material *material = material_from_id(material_id);
+	entry->material = material_from_id(material_id);
 
 	SDL_Surface *icon = SDL_CreateSurface(MATERIAL_ENTRY_ICON_PIXEL_SIZE, MATERIAL_ENTRY_ICON_PIXEL_SIZE, SDL_PIXELFORMAT_RGB24);
 	SDL_LockSurface(icon);
@@ -54,7 +54,7 @@ static bool material_selector_entry_render(MaterialSelectorEntry *entry, GameCon
 
 	SDL_RenderTexture(ctx->renderer, entry->icon_texture, nullptr, &dst_rect);
 
-	const bool is_selected = ctx->selected_material == entry->material_id;
+	const bool is_selected = ctx->selected_material_id == entry->material->id;
 	if(is_selected) {
 		SDL_RenderRect(ctx->renderer, &dst_rect);
 	}
@@ -68,7 +68,7 @@ void material_selector_init(MaterialSelector *selector, GameContext *ctx) {
 	selector->text_texture = nullptr;
 	selector->total_width = MATERIAL_ENTRY_ICON_SIZE * MATERIAL_COUNT + MATERIAL_ENTRY_ICON_GAP * (MATERIAL_COUNT - 1);
 
-	for(uint8_t i = 1; i < MATERIAL_ID_LAST; ++i) {
+	FOR_EACH_MATERIAL(i) {
 		material_selector_entry_init(&selector->entries[i - 1], i, ctx);
 	}
 }
@@ -78,17 +78,18 @@ void material_selector_render(MaterialSelector *selector, GameContext *ctx) {
 
 	float x = ctx->window_w * 0.5f - selector->total_width * 0.5f;
 
-	for(uint8_t i = 0; i < MATERIAL_COUNT; ++i) {
-		if(material_selector_entry_render(&selector->entries[i], ctx, x)) {
-			selector->hovered_entry = &selector->entries[i];
+	FOR_EACH_MATERIAL(i) {
+		if(material_selector_entry_render(&selector->entries[i-1], ctx, x)) {
+			selector->hovered_entry = &selector->entries[i-1];
 		}
 
 		x += MATERIAL_ENTRY_ICON_SIZE + MATERIAL_ENTRY_ICON_GAP;
 	}
 
-	SDL_SetCursor(selector->hovered_entry != nullptr ? ctx->hover_cursor : ctx->normal_cursor);
-
-	render_selected_material_text(selector, ctx);
+	if(selector->queue_text_redraw) {
+		selector->queue_text_redraw = false;
+		render_selected_material_text(selector, ctx);
+	}
 
 	selector->text_rect.y = ctx->window_h - SELECTED_MATERIAL_TEXT_SIZE;
 	selector->text_rect.x = ctx->window_w * 0.5f - selector->text_rect.w * 0.5f;
@@ -96,8 +97,8 @@ void material_selector_render(MaterialSelector *selector, GameContext *ctx) {
 }
 
 void material_selector_destroy(MaterialSelector *selector) {
-	for(uint8_t i = 0; i < MATERIAL_COUNT; ++i) {
-		material_selector_entry_destroy(&selector->entries[i]);
+	FOR_EACH_MATERIAL(i) {
+		material_selector_entry_destroy(&selector->entries[i - 1]);
 	}
 
 	SDL_DestroyTexture(selector->text_texture);

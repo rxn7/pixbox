@@ -22,24 +22,27 @@ typedef enum {
 typedef enum { UNIQUE, POWDER, SOLID, FLUID, GAS } MaterialType;
 
 typedef struct {
-	uint8_t max_age;
+	const uint8_t max_age;
 } GasMaterialData;
 
 typedef struct {
+	void *dummy;
 } FluidMaterialData;
 
 typedef struct {
+	void *dummy;
 } SolidMaterialData;
 
 typedef struct {
+	const MaterialID id;
 	const char *name;
 	const MaterialType type;
 	const Color color_palette[8];
 
 	union {
-		GasMaterialData gas;
-		FluidMaterialData fluid;
-		SolidMaterialData solid;
+		const GasMaterialData gas;
+		const FluidMaterialData fluid;
+		const SolidMaterialData solid;
 	};
 } Material;
 
@@ -54,4 +57,6 @@ extern const Material ICE_MATERIAL;
 
 extern const Material *MATERIALS[MATERIAL_COUNT];
 
-const Material *material_from_id(uint8_t id);
+const Material *material_from_id(const MaterialID id);
+
+#define FOR_EACH_MATERIAL(var) for(uint8_t var = 1; var < MATERIAL_ID_LAST; var++)
