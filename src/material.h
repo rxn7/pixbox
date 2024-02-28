@@ -14,8 +14,10 @@ typedef enum {
 	ID_ACID,
 	ID_OIL,
 	ID_ICE,
-	MATERIAL_COUNT
+	MATERIAL_ID_LAST
 } MaterialID;
+
+#define MATERIAL_COUNT (MATERIAL_ID_LAST - 1)
 
 typedef enum { UNIQUE, POWDER, SOLID, FLUID, GAS } MaterialType;
 

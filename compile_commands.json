@@ -1,25 +1,37 @@
 [
 {
   "directory": "/home/rxn/dev/c/pixbox/build/debug",
-  "command": "/usr/bin/clang -DGRID_HEIGHT=120 -DGRID_WIDTH=160 -isystem /usr/include/SDL3 -g -std=gnu2x -O3 -Wall -pedantic -g -o CMakeFiles/pixbox.dir/src/grid.c.o -c /home/rxn/dev/c/pixbox/src/grid.c",
+  "command": "/usr/bin/gcc -DGRID_HEIGHT=260 -DGRID_WIDTH=540 -isystem /usr/include/SDL3 -g -std=gnu2x -O3 -Wall -pedantic -g -o CMakeFiles/pixbox.dir/src/grid.c.o -c /home/rxn/dev/c/pixbox/src/grid.c",
   "file": "/home/rxn/dev/c/pixbox/src/grid.c",
   "output": "CMakeFiles/pixbox.dir/src/grid.c.o"
 },
 {
   "directory": "/home/rxn/dev/c/pixbox/build/debug",
-  "command": "/usr/bin/clang -DGRID_HEIGHT=120 -DGRID_WIDTH=160 -isystem /usr/include/SDL3 -g -std=gnu2x -O3 -Wall -pedantic -g -o CMakeFiles/pixbox.dir/src/main.c.o -c /home/rxn/dev/c/pixbox/src/main.c",
+  "command": "/usr/bin/gcc -DGRID_HEIGHT=260 -DGRID_WIDTH=540 -isystem /usr/include/SDL3 -g -std=gnu2x -O3 -Wall -pedantic -g -o CMakeFiles/pixbox.dir/src/main.c.o -c /home/rxn/dev/c/pixbox/src/main.c",
   "file": "/home/rxn/dev/c/pixbox/src/main.c",
   "output": "CMakeFiles/pixbox.dir/src/main.c.o"
 },
 {
   "directory": "/home/rxn/dev/c/pixbox/build/debug",
-  "command": "/usr/bin/clang -DGRID_HEIGHT=120 -DGRID_WIDTH=160 -isystem /usr/include/SDL3 -g -std=gnu2x -O3 -Wall -pedantic -g -o CMakeFiles/pixbox.dir/src/material.c.o -c /home/rxn/dev/c/pixbox/src/material.c",
+  "command": "/usr/bin/gcc -DGRID_HEIGHT=260 -DGRID_WIDTH=540 -isystem /usr/include/SDL3 -g -std=gnu2x -O3 -Wall -pedantic -g -o CMakeFiles/pixbox.dir/src/material.c.o -c /home/rxn/dev/c/pixbox/src/material.c",
   "file": "/home/rxn/dev/c/pixbox/src/material.c",
   "output": "CMakeFiles/pixbox.dir/src/material.c.o"
 },
 {
   "directory": "/home/rxn/dev/c/pixbox/build/debug",
-  "command": "/usr/bin/clang -DGRID_HEIGHT=120 -DGRID_WIDTH=160 -isystem /usr/include/SDL3 -g -std=gnu2x -O3 -Wall -pedantic -g -o CMakeFiles/pixbox.dir/src/simulation.c.o -c /home/rxn/dev/c/pixbox/src/simulation.c",
+  "command": "/usr/bin/gcc -DGRID_HEIGHT=260 -DGRID_WIDTH=540 -isystem /usr/include/SDL3 -g -std=gnu2x -O3 -Wall -pedantic -g -o CMakeFiles/pixbox.dir/src/material_selector.c.o -c /home/rxn/dev/c/pixbox/src/material_selector.c",
+  "file": "/home/rxn/dev/c/pixbox/src/material_selector.c",
+  "output": "CMakeFiles/pixbox.dir/src/material_selector.c.o"
+},
+{
+  "directory": "/home/rxn/dev/c/pixbox/build/debug",
+  "command": "/usr/bin/gcc -DGRID_HEIGHT=260 -DGRID_WIDTH=540 -isystem /usr/include/SDL3 -g -std=gnu2x -O3 -Wall -pedantic -g -o CMakeFiles/pixbox.dir/src/render.c.o -c /home/rxn/dev/c/pixbox/src/render.c",
+  "file": "/home/rxn/dev/c/pixbox/src/render.c",
+  "output": "CMakeFiles/pixbox.dir/src/render.c.o"
+},
+{
+  "directory": "/home/rxn/dev/c/pixbox/build/debug",
+  "command": "/usr/bin/gcc -DGRID_HEIGHT=260 -DGRID_WIDTH=540 -isystem /usr/include/SDL3 -g -std=gnu2x -O3 -Wall -pedantic -g -o CMakeFiles/pixbox.dir/src/simulation.c.o -c /home/rxn/dev/c/pixbox/src/simulation.c",
   "file": "/home/rxn/dev/c/pixbox/src/simulation.c",
   "output": "CMakeFiles/pixbox.dir/src/simulation.c.o"
 }

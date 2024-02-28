@@ -6,7 +6,7 @@
 void grid_init(Cells cells) {
 	for(uint32_t y = 0; y < GRID_HEIGHT; ++y) {
 		for(uint32_t x = 0; x < GRID_WIDTH; ++x) {
-			spawn_cell(cells, (Point){x, y}, ID_EMPTY);
+			spawn_cell(cells, (Point){ x, y }, ID_EMPTY);
 		}
 	}
 }
@@ -30,5 +30,5 @@ Cell *spawn_cell(Cells cells, Point p, MaterialID material_id) {
 }
 
 void delete_cell(Cells cells, Point p) {
-	cells[p.y][p.x] = (Cell){.material_id = ID_EMPTY, .color_idx = 0};
+	cells[p.y][p.x] = (Cell){ .material_id = ID_EMPTY, .color_idx = 0 };
 }

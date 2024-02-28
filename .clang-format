@@ -30,8 +30,9 @@ TabWidth: '4'
 UseTab: Always
 BreakConstructorInitializersBeforeComma: false
 BreakConstructorInitializers: AfterColon
-ConstructorInitializerAllOnOneLineOrOnePerLine: true
+ConstructorInitializerAllOnOneLineOrOnePerLine: false
 PackConstructorInitializers: NextLine
+Cpp11BracedListStyle: false
 
 ...
 

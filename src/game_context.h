@@ -1,25 +1,40 @@
 #pragma once
 
 #include "cell.h"
+#include "material_selector.h"
 
 #include <SDL_mutex.h>
 #include <SDL_render.h>
 #include <SDL_video.h>
 #include <stdatomic.h>
 
-typedef struct {
-	atomic_bool window_open;
+typedef enum { ACTION_NONE = 0, ACTION_SPAWN, ACTION_ERASE } GameAction;
+
+typedef struct GameContext {
+	const uint8_t grid_w, grid_h;
+
+	_Atomic bool window_open;
 	SDL_Window *window;
 	SDL_Renderer *renderer;
-	SDL_Texture *framebuffer;
 
-	atomic_bool spawn_cell_queued;
-	atomic_int_fast16_t brush_size;
+	SDL_Texture *framebuffer;
+	SDL_FRect framebuffer_rect;
+	float framebuffer_pixel_size_ratio;
+
+	_Atomic GameAction queued_action;
+	_Atomic MaterialID selected_material;
+	_Atomic uint16_t brush_size;
 
 	Cell *hovered_cell;
-	atomic_uint_fast16_t hovered_x, hovered_y;
+	_Atomic uint16_t hovered_x, hovered_y;
+
+	float mouse_x, mouse_y;
+	int32_t window_w, window_h;
 
 	Cells cells;
 	SDL_Mutex *cells_mutex;
-	atomic_bool cells_updated;
+
+	MaterialSelector material_selector;
+
+	SDL_Cursor *hover_cursor, *normal_cursor;
 } GameContext;

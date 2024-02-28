@@ -9,7 +9,8 @@ add_executable(pixbox ${sources})
 
 find_package(SDL3 REQUIRED CONFIG REQUIRED COMPONENTS SDL3)
 target_link_libraries(pixbox PRIVATE SDL3::SDL3)
+
 target_link_libraries(pixbox PRIVATE m)
 
-target_compile_definitions(pixbox PRIVATE GRID_WIDTH=540 GRID_HEIGHT=260)
+target_compile_definitions(pixbox PRIVATE GRID_WIDTH=1280 GRID_HEIGHT=720)
 target_compile_options(pixbox PUBLIC -O3 -Wall -pedantic -g)
