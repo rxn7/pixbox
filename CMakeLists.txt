@@ -16,3 +16,10 @@ target_link_libraries(pixbox PRIVATE m)
 
 target_compile_definitions(pixbox PRIVATE GRID_WIDTH=640 GRID_HEIGHT=480)
 target_compile_options(pixbox PUBLIC -O3 -Wall -pedantic -g)
+
+add_custom_target(copy_assets
+  COMMAND ${CMAKE_COMMAND} -E remove_directory ${CMAKE_CURRENT_BINARY_DIR}/assets
+  COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/assets ${CMAKE_CURRENT_BINARY_DIR}/assets
+)
+
+add_dependencies(pixbox copy_assets)

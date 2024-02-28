@@ -4,6 +4,7 @@
 #include "material_selector.h"
 #include "performance_stats.h"
 
+#include <SDL3_ttf/SDL_ttf.h>
 #include <SDL_mutex.h>
 #include <SDL_render.h>
 #include <SDL_video.h>
@@ -17,6 +18,10 @@ typedef struct GameContext {
 	SDL_Window *window;
 	SDL_Renderer *renderer;
 	SDL_Cursor *hover_cursor, *normal_cursor;
+	TTF_Font *font;
+
+	SDL_Texture *pause_text_texture;
+	SDL_FRect pause_text_rect;
 
 	SDL_Texture *framebuffer;
 	SDL_FRect framebuffer_rect;

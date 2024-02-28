@@ -45,9 +45,18 @@ static void start() {
 	const uint32_t init_result = SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS);
 	SDL_assert_always(init_result == 0);
 
-	GameContext ctx = (GameContext){ .is_window_open = true, .window = SDL_CreateWindow("Pixbox", 640, 480, SDL_WINDOW_RESIZABLE), .renderer = nullptr, .brush_size = 2, .selected_material = ID_SAND, .framebuffer_pixel_size_ratio = 1.0f, .hover_cursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_HAND), .normal_cursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_ARROW), .is_paused = false };
+	GameContext ctx = (GameContext){ .is_window_open = true, .renderer = nullptr, .brush_size = 2, .selected_material = ID_SAND, .framebuffer_pixel_size_ratio = 1.0f, .is_paused = false };
 
+	ctx.window = SDL_CreateWindow("Pixbox", 640, 480, SDL_WINDOW_RESIZABLE);
 	SDL_assert_always(ctx.window != nullptr);
+
+	ctx.hover_cursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_HAND);
+	ctx.normal_cursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_ARROW);
+
+	const uint32_t ttf_init_result = TTF_Init();
+	SDL_assert_always(ttf_init_result == 0);
+	ctx.font = TTF_OpenFont("assets/Romulus.ttf", SELECTED_MATERIAL_TEXT_SIZE);
+	SDL_assert_always(ctx.font != nullptr);
 
 	ctx.renderer = SDL_CreateRenderer(ctx.window, nullptr, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
 	SDL_assert_always(ctx.renderer != nullptr);
@@ -55,11 +64,18 @@ static void start() {
 	ctx.framebuffer = SDL_CreateTexture(ctx.renderer, SDL_PIXELFORMAT_RGB24, SDL_TEXTUREACCESS_STREAMING, GRID_WIDTH, GRID_HEIGHT);
 	SDL_SetTextureScaleMode(ctx.framebuffer, SDL_SCALEMODE_NEAREST);
 
+	{
+		SDL_Surface *pause_text_surface = TTF_RenderText_Solid(ctx.font, "-paused-", (SDL_Color){ 255, 255, 255, 255 });
+		ctx.pause_text_rect.w = pause_text_surface->w;
+		ctx.pause_text_rect.h = pause_text_surface->h;
+		ctx.pause_text_texture = SDL_CreateTextureFromSurface(ctx.renderer, pause_text_surface);
+		SDL_DestroySurface(pause_text_surface);
+	}
+
 	grid_init(ctx.cells);
 	material_selector_init(&ctx.material_selector, &ctx);
 
 	SDL_Thread *simulation_thread = SDL_CreateThread(simulation_loop, "update", (void *)&ctx);
-
 	SDL_TimerID process_performance_stats_timer = SDL_AddTimer(1000, process_performance_stats, (void *)&ctx);
 
 	uint64_t now = SDL_GetPerformanceCounter();
@@ -78,13 +94,15 @@ static void start() {
 		render(&ctx);
 	}
 
+	material_selector_destroy(&ctx.material_selector);
+	TTF_CloseFont(ctx.font);
 	SDL_RemoveTimer(process_performance_stats_timer);
 	SDL_DestroyTexture(ctx.framebuffer);
+	SDL_DestroyTexture(ctx.pause_text_texture);
 	SDL_DestroyCursor(ctx.hover_cursor);
 	SDL_DestroyCursor(ctx.normal_cursor);
 	SDL_DestroyRenderer(ctx.renderer);
 	SDL_DestroyWindow(ctx.window);
-	material_selector_destroy(&ctx.material_selector);
 	SDL_WaitThread(simulation_thread, nullptr);
 	SDL_Quit();
 }
@@ -118,9 +136,9 @@ static void handle_event(GameContext *ctx, const SDL_Event *event) {
 
 	case SDL_EVENT_MOUSE_WHEEL:
 		if(event->wheel.y < 0) {
-			ctx->brush_size = SDL_max(1, ctx->brush_size - 1);
+			ctx->brush_size = SDL_max(1, ctx->brush_size - 4);
 		} else if(event->wheel.y > 0) {
-			ctx->brush_size = SDL_min(GRID_HEIGHT, ctx->brush_size + 1);
+			ctx->brush_size = SDL_min(GRID_HEIGHT, ctx->brush_size + 4);
 		}
 		break;
 
@@ -178,6 +196,12 @@ static void render(GameContext *ctx) {
 	render_cirlce(ctx->renderer, (Point){ ctx->mouse_x, ctx->mouse_y }, ctx->brush_size * ctx->framebuffer_pixel_size_ratio);
 
 	material_selector_render(&ctx->material_selector, ctx);
+
+	if(ctx->is_paused) {
+		ctx->pause_text_rect.x = ctx->window_w * 0.5f - ctx->pause_text_rect.w * 0.5f;
+		ctx->pause_text_rect.y = ctx->window_h * 0.5f - ctx->pause_text_rect.h * 0.5f;
+		SDL_RenderTexture(ctx->renderer, ctx->pause_text_texture, nullptr, &ctx->pause_text_rect);
+	}
 
 	SDL_RenderPresent(ctx->renderer);
 }
