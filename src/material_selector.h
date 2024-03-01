@@ -27,6 +27,6 @@ typedef struct {
 	uint32_t total_width;
 } MaterialSelector;
 
-void material_selector_init(MaterialSelector *selector, struct GameContext *ctx);
-void material_selector_render(MaterialSelector *selector, struct GameContext *ctx);
-void material_selector_destroy(MaterialSelector *selector);
+void material_selector_init(MaterialSelector *const selector, GameContext *const ctx);
+void material_selector_render(MaterialSelector *const selector, GameContext *const ctx);
+void material_selector_destroy(MaterialSelector *const selector);

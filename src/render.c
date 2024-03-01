@@ -6,11 +6,12 @@ const float SQRT2_INV = 35.0f / 19.0f;
 
 #define round_to_multiple_of_eight(v) (((int)(v) + (8 - 1)) & -8)
 
-void render_cirlce(SDL_Renderer *const renderer, Point center, const uint16_t radius) {
+void render_cirlce(SDL_Renderer *const renderer, const Point center, const uint16_t radius) {
 	SDL_assert(radius > 0);
 
 	const uint16_t arr_size = round_to_multiple_of_eight(radius * 8 * SQRT2_INV);
-	SDL_FPoint points[arr_size]; uint16_t point_count = 0;
+	SDL_FPoint points[arr_size];
+	uint16_t point_count = 0;
 
 	const uint16_t diameter = radius * 2;
 

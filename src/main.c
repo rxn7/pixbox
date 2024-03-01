@@ -17,14 +17,14 @@
 #include <string.h>
 #include <time.h>
 
-static void start(GameContext *ctx);
-static void init(GameContext *ctx);
-static void cleanup(GameContext *ctx);
-static void handle_event(GameContext *ctx, const SDL_Event *event);
-static void render(GameContext *ctx);
-static void render_cells(GameContext *ctx);
-static void update_hovered_cell(GameContext *ctx);
-static uint32_t process_performance_stats(uint32_t interval, void *param);
+static void start(GameContext *const ctx);
+static void init(GameContext *const ctx);
+static void cleanup(GameContext *const ctx);
+static void handle_event(GameContext *const ctx, const SDL_Event *const event);
+static void render(GameContext *const ctx);
+static void render_cells(GameContext *const ctx);
+static void update_hovered_cell(GameContext *const ctx);
+static uint32_t process_performance_stats(uint32_t interval, void *const param);
 
 int main(int argc, const char **argv) {
 	srand(time(NULL));
@@ -39,6 +39,7 @@ int main(int argc, const char **argv) {
 #endif
 
 	GameContext ctx;
+
 	init(&ctx);
 	start(&ctx);
 	cleanup(&ctx);
@@ -47,7 +48,6 @@ int main(int argc, const char **argv) {
 }
 
 static void start(GameContext *ctx) {
-	SDL_Thread *simulation_thread = SDL_CreateThread(simulation_loop, "update", (void *)ctx);
 	const SDL_TimerID process_performance_stats_timer = SDL_AddTimer(1000, process_performance_stats, (void *)ctx);
 
 	uint64_t now = SDL_GetPerformanceCounter();
@@ -69,7 +69,6 @@ static void start(GameContext *ctx) {
 	}
 
 	SDL_RemoveTimer(process_performance_stats_timer);
-	SDL_WaitThread(simulation_thread, nullptr);
 }
 
 static void init(GameContext *ctx) {
@@ -110,10 +109,13 @@ static void init(GameContext *ctx) {
 
 	grid_init(ctx->cells);
 	material_selector_init(&ctx->material_selector, ctx);
+
+	simulation_init(&ctx->simulation, ctx);
 }
 
 static void cleanup(GameContext *ctx) {
 	material_selector_destroy(&ctx->material_selector);
+	simulation_destroy(&ctx->simulation);
 	TTF_CloseFont(ctx->font);
 	SDL_DestroyTexture(ctx->framebuffer);
 	SDL_DestroyTexture(ctx->pause_text_texture);
@@ -230,12 +232,12 @@ static void render_cells(GameContext *ctx) {
 	SDL_LockTextureToSurface(ctx->framebuffer, nullptr, &surface);
 	SDL_FillSurfaceRect(surface, nullptr, 0x000000);
 
-	uint8_t *pixels = (uint8_t *)surface->pixels;
+	uint8_t *const pixels = (uint8_t *)surface->pixels;
 
 	SDL_LockMutex(ctx->cells_mutex);
 	for(uint32_t y = 0; y < GRID_HEIGHT; ++y) {
 		for(uint32_t x = 0; x < GRID_WIDTH; ++x) {
-			Cell *cell = &ctx->cells[y][x];
+			Cell *const cell = &ctx->cells[y][x];
 
 			if(cell->material_id == ID_EMPTY) {
 				continue;
@@ -253,10 +255,7 @@ static void render_cells(GameContext *ctx) {
 	SDL_UnlockTexture(ctx->framebuffer);
 }
 
-static void update_hovered_cell(GameContext *ctx) {
-	int32_t window_w, window_h;
-	SDL_GetWindowSizeInPixels(ctx->window, &window_w, &window_h);
-
+static void update_hovered_cell(GameContext *const ctx) {
 	const float x = (ctx->mouse_x - ctx->framebuffer_rect.x) / ctx->framebuffer_pixel_size_ratio;
 	const float y = (ctx->mouse_y - ctx->framebuffer_rect.y) / ctx->framebuffer_pixel_size_ratio;
 
@@ -267,10 +266,10 @@ static void update_hovered_cell(GameContext *ctx) {
 
 	ctx->hovered_x = (PointComponent)(x);
 	ctx->hovered_y = (PointComponent)(y);
-	ctx->hovered_cell = cell_at(ctx->cells, (Point){ x, y });
+	ctx->hovered_cell = CELL_AT_XY(ctx->cells, ctx->hovered_y, ctx->hovered_y);
 }
 
-static uint32_t process_performance_stats(uint32_t interval, void *param) {
+static uint32_t process_performance_stats(uint32_t interval, void *const param) {
 	GameContext *ctx = (GameContext *)param;
 	puts("\n====================== PERFORMANCE STATS ======================");
 	printf("FPS: %u\n", (uint32_t)(ctx->performance_stats.frame_count / (interval * 0.001f)));

@@ -3,6 +3,7 @@
 #include "cell.h"
 #include "material_selector.h"
 #include "performance_stats.h"
+#include "simulation.h"
 
 #include <SDL3_ttf/SDL_ttf.h>
 #include <SDL_mutex.h>
@@ -13,6 +14,8 @@
 typedef enum { ACTION_NONE = 0, ACTION_SPAWN, ACTION_ERASE } GameAction;
 
 typedef struct GameContext {
+	Simulation simulation;
+
 	_Atomic bool is_paused;
 	_Atomic bool is_window_open;
 	SDL_Window *window;
@@ -32,7 +35,7 @@ typedef struct GameContext {
 	_Atomic uint16_t brush_size;
 
 	Cell *hovered_cell;
-	_Atomic uint16_t hovered_x, hovered_y;
+	_Atomic PointComponent hovered_x, hovered_y;
 
 	float mouse_x, mouse_y;
 	int32_t window_w, window_h;
