@@ -54,7 +54,7 @@ static void start(GameContext *ctx) {
 	uint64_t last_frame_tick = now;
 	while(ctx->is_window_open) {
 		now = SDL_GetPerformanceCounter();
-		ctx->performance_stats.frame_time = (float)(now - last_frame_tick) / SDL_GetPerformanceFrequency() * 1000;
+		ctx->performance_stats.frame_time_ns = (float)(now - last_frame_tick) / SDL_GetPerformanceFrequency() * 1000000000;
 		ctx->performance_stats.frame_count++;
 		last_frame_tick = now;
 
@@ -172,6 +172,7 @@ static void handle_event(GameContext *ctx, const SDL_Event *event) {
 		switch(event->key.keysym.sym) {
 		case SDLK_r:
 			grid_init(ctx->cells);
+			ctx->simulation.queue_clear_cells = true;
 			break;
 		case SDLK_ESCAPE:
 			ctx->is_paused = !ctx->is_paused;
@@ -271,11 +272,13 @@ static void update_hovered_cell(GameContext *const ctx) {
 
 static uint32_t process_performance_stats(uint32_t interval, void *const param) {
 	GameContext *ctx = (GameContext *)param;
+	puts("\033[0;0H\033[2J");
 	puts("\n====================== PERFORMANCE STATS ======================");
 	printf("FPS: %u\n", (uint32_t)(ctx->performance_stats.frame_count / (interval * 0.001f)));
-	printf("Frame time: %u ms\n", ctx->performance_stats.frame_time);
-	printf("Simulation step time: %u ms\n", ctx->performance_stats.simulation_step_time);
-	puts("================================================================\n");
+	printf("Frame time: %0.3f ms\n", ctx->performance_stats.frame_time_ns * 0.000001f);
+	printf("Simulation step time: %0.3f ms\n", ctx->performance_stats.simulation_step_time_ns * 0.000001f);
+	printf("Target Simulation step time: %0.3f ms\n", ctx->performance_stats.target_simulation_step_times_ns * 0.000001f);
+	puts("===============================================================");
 
 	ctx->performance_stats.frame_count = 0;
 

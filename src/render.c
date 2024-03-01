@@ -17,9 +17,9 @@ void render_cirlce(SDL_Renderer *const renderer, const Point center, const uint1
 
 	int16_t x = radius - 1;
 	int16_t y = 0;
-	int16_t tx = 1;
-	int16_t ty = 1;
-	int16_t error = tx - diameter;
+	int16_t dx = 1;
+	int16_t dy = 1;
+	int16_t error = dx - diameter;
 
 	while(x >= y) {
 		if(point_count >= arr_size - 8) {
@@ -37,14 +37,14 @@ void render_cirlce(SDL_Renderer *const renderer, const Point center, const uint1
 
 		if(error <= 0) {
 			++y;
-			error += ty;
-			ty += 2;
+			error += dy;
+			dy += 2;
 		}
 
 		if(error > 0) {
 			--x;
-			tx += 2;
-			error += tx - diameter;
+			dx += 2;
+			error += dx - diameter;
 		}
 	}
 

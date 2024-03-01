@@ -18,6 +18,7 @@ static void handle_queued_action(GameContext *const ctx, Cells cells);
 void simulation_init(Simulation *const sim, GameContext *const ctx) {
 	sim->ctx = ctx;
 	sim->thread = SDL_CreateThread(simulation_loop, "simulation", sim);
+	sim->ctx->performance_stats.target_simulation_step_times_ns = 1000000000 / TARGET_STEPS_PER_SECOND;
 }
 
 void simulation_destroy(Simulation *const sim) {
@@ -85,8 +86,11 @@ int32_t simulation_loop(void *data) {
 	Simulation *sim = (Simulation *)data;
 	GameContext *ctx = sim->ctx;
 
+	Cells next_step_cells;
+
 	while(ctx->is_window_open) {
-		const uint64_t start_tick = SDL_GetPerformanceCounter();
+		const uint64_t step_start_tick = SDL_GetPerformanceCounter();
+		const uint64_t next_step_tick = step_start_tick + (uint64_t)(SECONDS_PER_STEP * SDL_GetPerformanceFrequency());
 
 		if(ctx->is_paused) {
 			goto end_step;
@@ -94,10 +98,19 @@ int32_t simulation_loop(void *data) {
 
 		bool update_map[GRID_HEIGHT][GRID_WIDTH] = { 0 };
 
-		Cells updated_cells;
 		SDL_LockMutex(ctx->cells_mutex);
-		memcpy(&updated_cells, ctx->cells, sizeof(Cells));
-		handle_queued_action(ctx, updated_cells);
+		memcpy(next_step_cells, ctx->cells, sizeof(Cells));
+
+		if(sim->queue_clear_cells) {
+			for(uint32_t y = 0; y < GRID_HEIGHT; ++y) {
+				for(uint32_t x = 0; x < GRID_WIDTH; ++x) {
+					set_cell(next_step_cells, (Point){ x, y }, ID_EMPTY);
+				}
+			}
+			sim->queue_clear_cells = false;
+		}
+
+		handle_queued_action(ctx, next_step_cells);
 
 		for(PointComponent y = GRID_HEIGHT - 1; y >= 0; y--) {
 			for(PointComponent x = 0; x < GRID_WIDTH; ++x) {
@@ -132,25 +145,27 @@ int32_t simulation_loop(void *data) {
 				}
 
 				if(!point_compare(point, new_point)) {
-					move_cell(updated_cells, point, new_point);
+					move_cell(next_step_cells, point, new_point);
 					update_map[new_point.y][new_point.x] = true;
 				}
 
 				update_map[point.y][point.x] = true;
 			}
 		}
-		memcpy(ctx->cells, &updated_cells, sizeof(Cells));
+
+		memcpy(ctx->cells, next_step_cells, sizeof(Cells));
+
 		SDL_UnlockMutex(ctx->cells_mutex);
 
 	end_step:;
-		const uint64_t end_tick = SDL_GetPerformanceCounter();
-		const float time_elapsed = (end_tick - start_tick) / (float)SDL_GetPerformanceFrequency();
+		const uint64_t step_end_tick = SDL_GetPerformanceCounter();
 
-		if(time_elapsed < SECONDS_PER_STEP) {
-			SDL_Delay((SECONDS_PER_STEP - time_elapsed) * 1000);
+		if(step_end_tick < next_step_tick) {
+			const uint32_t sleep_time = ((float)(next_step_tick - step_end_tick) / SDL_GetPerformanceFrequency()) * 1000;
+			SDL_Delay(sleep_time);
 		}
 
-		ctx->performance_stats.simulation_step_time = time_elapsed * 1000;
+		ctx->performance_stats.simulation_step_time_ns = (float)(step_end_tick - step_start_tick) / SDL_GetPerformanceFrequency() * 1000000000;
 	}
 
 	return 0;
@@ -166,10 +181,9 @@ static void handle_queued_action(GameContext *const ctx, Cells cells) {
 	case ACTION_SPAWN:
 		material_id = ctx->selected_material_id;
 		break;
+	default:
 	case ACTION_ERASE:
 		material_id = ID_EMPTY;
-		break;
-	default:
 		break;
 	}
 
@@ -178,9 +192,9 @@ static void handle_queued_action(GameContext *const ctx, Cells cells) {
 
 	PointComponent x = radius - 1;
 	PointComponent y = 0;
-	PointComponent tx = 1;
-	PointComponent ty = 1;
-	PointComponent error = tx - diameter;
+	PointComponent dx = 1;
+	PointComponent dy = 1;
+	PointComponent error = dx - diameter;
 
 	while(x >= y) {
 		for(PointComponent i = -x; i < x; ++i) {
@@ -201,14 +215,14 @@ static void handle_queued_action(GameContext *const ctx, Cells cells) {
 
 		if(error <= 0) {
 			++y;
-			error += ty;
-			ty += 2;
+			error += dy;
+			dy += 2;
 		}
 
 		if(error > 0) {
 			--x;
-			tx += 2;
-			error += tx - diameter;
+			dx += 2;
+			error += dx - diameter;
 		}
 	}
 }
