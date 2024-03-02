@@ -69,7 +69,18 @@ static Point simulate_fluid(Cells cells, const Point p) {
 
 	int8_t offset = (int)(round(rand() / (float)RAND_MAX) * 2 - 1);
 	for(uint8_t i = 0; i < 2; ++i) {
-		new_point = (Point){ p.x + offset, p.y + 1 };
+		new_point = (Point){ p.x + offset, p.y };
+		const MaterialID new_point_material_id = CELL_AT_POINT(cells, new_point)->material_id;
+
+		if(p.x + offset >= 0 && p.x + offset < GRID_WIDTH && new_point_material_id == ID_EMPTY) {
+			return new_point;
+		}
+
+		offset *= -1;
+	}
+
+	for(uint8_t i = 0; i < 2; ++i) {
+		new_point = (Point){ p.x + offset, p.y };
 		const MaterialID new_point_material_id = CELL_AT_POINT(cells, new_point)->material_id;
 
 		if(p.x + offset >= 0 && p.x + offset < GRID_WIDTH && new_point_material_id == ID_EMPTY) {
@@ -88,16 +99,13 @@ int32_t simulation_loop(void *data) {
 
 	Cells next_step_cells;
 	bool odd_step = false;
+	bool update_map[GRID_HEIGHT][GRID_WIDTH];
 
 	while(ctx->is_window_open) {
 		const uint64_t step_start_tick = SDL_GetPerformanceCounter();
 		const uint64_t next_step_tick = step_start_tick + (uint64_t)(SECONDS_PER_STEP * SDL_GetPerformanceFrequency());
 
-		if(ctx->is_paused) {
-			goto end_step;
-		}
-
-		bool update_map[GRID_HEIGHT][GRID_WIDTH] = { 0 };
+		memset(update_map, 0, sizeof(update_map));
 
 		SDL_LockMutex(ctx->cells_mutex);
 		memcpy(next_step_cells, ctx->cells, sizeof(Cells));
@@ -112,6 +120,10 @@ int32_t simulation_loop(void *data) {
 		}
 
 		handle_queued_action(ctx, next_step_cells);
+
+		if(ctx->is_paused) {
+			goto end_step;
+		}
 
 		for(PointComponent y = GRID_HEIGHT - 1; y >= 0; y--) {
 			for(PointComponent i = 0; i < GRID_WIDTH; ++i) {
@@ -160,11 +172,10 @@ int32_t simulation_loop(void *data) {
 			}
 		}
 
+	end_step:;
 		memcpy(ctx->cells, next_step_cells, sizeof(Cells));
-
 		SDL_UnlockMutex(ctx->cells_mutex);
 
-	end_step:;
 		const uint64_t step_end_tick = SDL_GetPerformanceCounter();
 
 		if(step_end_tick < next_step_tick) {

@@ -14,8 +14,8 @@ target_link_libraries(pixbox PRIVATE SDL3_ttf::SDL3_ttf)
 
 target_link_libraries(pixbox PRIVATE m)
 
-target_compile_definitions(pixbox PRIVATE GRID_WIDTH=256 GRID_HEIGHT=256)
-target_compile_options(pixbox PUBLIC -O3 -Wall -pedantic -g)
+target_compile_definitions(pixbox PRIVATE GRID_WIDTH=8 GRID_HEIGHT=8)
+target_compile_options(pixbox PUBLIC -O4 -Wall -pedantic -g)
 
 add_custom_target(copy_assets
   COMMAND ${CMAKE_COMMAND} -E remove_directory ${CMAKE_CURRENT_BINARY_DIR}/assets

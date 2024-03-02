@@ -26,11 +26,9 @@ typedef struct {
 } GasMaterialData;
 
 typedef struct {
-	void *dummy;
 } FluidMaterialData;
 
 typedef struct {
-	void *dummy;
 } SolidMaterialData;
 
 typedef struct {
