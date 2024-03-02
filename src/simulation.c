@@ -94,8 +94,8 @@ static Point simulate_fluid(Cells cells, const Point p) {
 }
 
 int32_t simulation_loop(void *data) {
-	Simulation *sim = (Simulation *)data;
-	GameContext *ctx = sim->ctx;
+	Simulation *const sim = (Simulation *)data;
+	GameContext *const ctx = sim->ctx;
 
 	Cells next_step_cells;
 	bool odd_step = false;
