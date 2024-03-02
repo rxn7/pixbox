@@ -87,6 +87,7 @@ int32_t simulation_loop(void *data) {
 	GameContext *ctx = sim->ctx;
 
 	Cells next_step_cells;
+	bool odd_step = false;
 
 	while(ctx->is_window_open) {
 		const uint64_t step_start_tick = SDL_GetPerformanceCounter();
@@ -113,7 +114,13 @@ int32_t simulation_loop(void *data) {
 		handle_queued_action(ctx, next_step_cells);
 
 		for(PointComponent y = GRID_HEIGHT - 1; y >= 0; y--) {
-			for(PointComponent x = 0; x < GRID_WIDTH; ++x) {
+			for(PointComponent i = 0; i < GRID_WIDTH; ++i) {
+				PointComponent x = i;
+				// Fix patternization
+				if(odd_step) {
+					x = GRID_WIDTH - x - 1;
+				}
+
 				if(update_map[y][x]) {
 					continue;
 				}
@@ -166,6 +173,7 @@ int32_t simulation_loop(void *data) {
 		}
 
 		ctx->performance_stats.simulation_step_time_ns = (float)(step_end_tick - step_start_tick) / SDL_GetPerformanceFrequency() * 1000000000;
+		odd_step = !odd_step;
 	}
 
 	return 0;
