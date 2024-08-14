@@ -220,6 +220,10 @@ static void render_cells(GameContext *const ctx) {
 			}
 
 			const Material *const material = material_from_id(cell->material_id);
+			if(material == nullptr) {
+				continue;
+			}
+
 			Color color = material->color_palette[cell->color_idx];
 
 			if(material->type == GAS) {

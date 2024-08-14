@@ -1,5 +1,4 @@
 #include "grid.h"
-#include "point.h"
 
 #include <stdlib.h>
 
@@ -50,7 +49,7 @@ void grid_create_cell(Cells cells, const Point p, const MaterialID material_id) 
 		default:
 			break;
 	}
-	
+
 	cell->color_idx = rand() % 8;
 }
 

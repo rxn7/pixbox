@@ -10,14 +10,14 @@ typedef struct {
 	PointComponent y;
 } Point;
 
-inline bool point_is_valid(const Point p) {
+static inline bool point_is_valid(const Point p) {
 	return p.x >= 0 && p.x < GRID_WIDTH && p.y >= 0 && p.y < GRID_HEIGHT;
 }
 
-inline bool point_equals(const Point a, const Point b) {
+static inline bool point_equals(const Point a, const Point b) {
 	return a.x == b.x && a.y == b.y;
 }
 
-inline float point_distance(const Point a, const Point b) {
+static inline float point_distance(const Point a, const Point b) {
 	return sqrtf((a.x - b.x) * (a.x - b.x) + (a.y - b.y) * (a.y - b.y));
 }

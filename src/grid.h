@@ -11,7 +11,7 @@ void grid_move_cell(Cells cells, const Point from, const Point to);
 void grid_create_cell(Cells cells, const Point p, const MaterialID material_id);
 void grid_fill_circle(Cells cells, const Point p, const MaterialID material_id, const int radius);
 
-inline void grid_set_cell_safe(Cells cells, const Point p, const MaterialID material_id) {
+static inline void grid_set_cell_safe(Cells cells, const Point p, const MaterialID material_id) {
 	if(!point_is_valid(p)) {
 		return;
 	}
