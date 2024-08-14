@@ -1,7 +1,6 @@
 #include "material_selector.h"
 #include "game_context.h"
 
-#include <stdio.h>
 #include <stdlib.h>
 
 static void render_selected_material_text(MaterialSelector *const selector, GameContext *const ctx) {

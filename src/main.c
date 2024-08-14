@@ -11,7 +11,6 @@
 #include <SDL_render.h>
 #include <SDL_thread.h>
 
-#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -25,6 +24,8 @@ static void render(GameContext *const ctx);
 static void render_cells(GameContext *const ctx);
 static void update_hovered_cell(GameContext *const ctx);
 static uint32_t process_performance_stats(uint32_t interval, void *const param);
+static void handle_window_resize(GameContext *const ctx, const SDL_Event *const event);
+static void handle_key_event(GameContext *const ctx, const SDL_Event *const event);
 
 int main(int argc, const char **argv) {
 	srand(time(NULL));
@@ -71,29 +72,29 @@ static void start(GameContext *ctx) {
 	SDL_RemoveTimer(process_performance_stats_timer);
 }
 
-static void init(GameContext *ctx) {
+static void init(GameContext *const ctx) {
 	const uint32_t init_result = SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS);
 	SDL_assert_always(init_result == 0);
 
-	ctx->cells_mutex = SDL_CreateMutex();
 	ctx->is_window_open = true;
 	ctx->brush_size = 2;
 	ctx->selected_material_id = ID_SAND;
 	ctx->framebuffer_pixel_size_ratio = 1.0f;
 	ctx->is_paused = false;
+	ctx->performance_stats.frame_count = 0;
 
 	ctx->window = SDL_CreateWindow("Pixbox", 640, 480, SDL_WINDOW_RESIZABLE);
 	SDL_assert_always(ctx->window != nullptr);
 
 	ctx->hover_cursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_HAND);
 	ctx->normal_cursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_ARROW);
-
+	
 	const uint32_t ttf_init_result = TTF_Init();
 	SDL_assert_always(ttf_init_result == 0);
 	ctx->font = TTF_OpenFont("assets/Romulus.ttf", SELECTED_MATERIAL_TEXT_SIZE);
 	SDL_assert_always(ctx->font != nullptr);
 
-	ctx->renderer = SDL_CreateRenderer(ctx->window, nullptr, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
+	ctx->renderer = SDL_CreateRenderer(ctx->window, nullptr, SDL_RENDERER_ACCELERATED /*| SDL_RENDERER_PRESENTVSYNC*/);
 	SDL_assert_always(ctx->renderer != nullptr);
 
 	ctx->framebuffer = SDL_CreateTexture(ctx->renderer, SDL_PIXELFORMAT_RGB24, SDL_TEXTUREACCESS_STREAMING, GRID_WIDTH, GRID_HEIGHT);
@@ -107,15 +108,17 @@ static void init(GameContext *ctx) {
 		SDL_DestroySurface(pause_text_surface);
 	}
 
-	grid_init(ctx->cells);
 	material_selector_init(&ctx->material_selector, ctx);
+
+	ctx->cells_mutex = SDL_CreateMutex();
 
 	simulation_init(&ctx->simulation, ctx);
 }
 
-static void cleanup(GameContext *ctx) {
+static void cleanup(GameContext *const ctx) {
 	material_selector_destroy(&ctx->material_selector);
 	simulation_destroy(&ctx->simulation);
+	SDL_DestroyMutex(ctx->cells_mutex);
 	TTF_CloseFont(ctx->font);
 	SDL_DestroyTexture(ctx->framebuffer);
 	SDL_DestroyTexture(ctx->pause_text_texture);
@@ -123,11 +126,10 @@ static void cleanup(GameContext *ctx) {
 	SDL_DestroyCursor(ctx->normal_cursor);
 	SDL_DestroyRenderer(ctx->renderer);
 	SDL_DestroyWindow(ctx->window);
-	SDL_DestroyMutex(ctx->cells_mutex);
 	SDL_Quit();
 }
 
-static void handle_event(GameContext *ctx, const SDL_Event *event) {
+static void handle_event(GameContext *const ctx, const SDL_Event *const event) {
 	switch(event->type) {
 	case SDL_EVENT_WINDOW_CLOSE_REQUESTED:
 	case SDL_EVENT_QUIT:
@@ -169,43 +171,17 @@ static void handle_event(GameContext *ctx, const SDL_Event *event) {
 		break;
 
 	case SDL_EVENT_KEY_DOWN:
-		switch(event->key.keysym.sym) {
-		case SDLK_r:
-			grid_init(ctx->cells);
-			ctx->simulation.queue_clear_cells = true;
-			break;
-		case SDLK_ESCAPE:
-			ctx->is_paused = !ctx->is_paused;
-			break;
-		}
+		handle_key_event(ctx, event);
 		break;
 
 	case SDL_EVENT_WINDOW_RESIZED:
-		ctx->window_w = event->window.data1;
-		ctx->window_h = event->window.data2;
-
-		const float framebuffer_available_height = ctx->window_h - MATERIAL_SELECTOR_HEIGHT;
-		const float available_size_ratio = ctx->window_w / (float)framebuffer_available_height;
-		const float grid_ratio = GRID_WIDTH / (float)GRID_HEIGHT;
-
-		if(available_size_ratio < grid_ratio) {
-			ctx->framebuffer_pixel_size_ratio = ctx->window_w / (float)GRID_WIDTH;
-			ctx->framebuffer_rect.x = 0.0f;
-			ctx->framebuffer_rect.y = (float)(framebuffer_available_height - GRID_HEIGHT * ctx->framebuffer_pixel_size_ratio) * 0.5f;
-		} else {
-			ctx->framebuffer_pixel_size_ratio = framebuffer_available_height / (float)GRID_HEIGHT;
-			ctx->framebuffer_rect.x = (float)(ctx->window_w - GRID_WIDTH * ctx->framebuffer_pixel_size_ratio) * 0.5f;
-			ctx->framebuffer_rect.y = 0.0f;
-		}
-
-		ctx->framebuffer_rect.w = GRID_WIDTH * ctx->framebuffer_pixel_size_ratio;
-		ctx->framebuffer_rect.h = GRID_HEIGHT * ctx->framebuffer_pixel_size_ratio;
+		handle_window_resize(ctx, event);
 
 		break;
 	}
 }
 
-static void render(GameContext *ctx) {
+static void render(GameContext *const ctx) {
 	SDL_SetRenderDrawColor(ctx->renderer, 0, 0, 0, 255);
 	SDL_RenderClear(ctx->renderer);
 
@@ -228,14 +204,13 @@ static void render(GameContext *ctx) {
 	SDL_RenderPresent(ctx->renderer);
 }
 
-static void render_cells(GameContext *ctx) {
+static void render_cells(GameContext *const ctx) {
 	SDL_Surface *surface;
 	SDL_LockTextureToSurface(ctx->framebuffer, nullptr, &surface);
 	SDL_FillSurfaceRect(surface, nullptr, 0x000000);
 
 	uint8_t *const pixels = (uint8_t *)surface->pixels;
 
-	SDL_LockMutex(ctx->cells_mutex);
 	for(uint32_t y = 0; y < GRID_HEIGHT; ++y) {
 		for(uint32_t x = 0; x < GRID_WIDTH; ++x) {
 			Cell *const cell = &ctx->cells[y][x];
@@ -244,14 +219,21 @@ static void render_cells(GameContext *ctx) {
 				continue;
 			}
 
-			const Material *material = material_from_id(cell->material_id);
-			const Color color = material->color_palette[cell->color_idx];
+			const Material *const material = material_from_id(cell->material_id);
+			Color color = material->color_palette[cell->color_idx];
+
+			if(material->type == GAS) {
+				if(cell->gas.age >= cell->gas.death_age) {
+					continue;
+				}
+				color = color_darken(color, (cell->gas.death_age - cell->gas.age) / (float)cell->gas.death_age);
+			}
+			
 			for(uint8_t c = 0; c < 3; ++c) {
 				pixels[3 * (y * surface->w + x) + c] = color.rgb[c];
 			}
 		}
 	}
-	SDL_UnlockMutex(ctx->cells_mutex);
 
 	SDL_UnlockTexture(ctx->framebuffer);
 }
@@ -283,4 +265,40 @@ static uint32_t process_performance_stats(uint32_t interval, void *const param) 
 	ctx->performance_stats.frame_count = 0;
 
 	return interval;
+}
+
+static void handle_window_resize(GameContext *const ctx, const SDL_Event *const event) {
+	ctx->window_w = event->window.data1;
+	ctx->window_h = event->window.data2;
+
+	const float framebuffer_available_height = ctx->window_h - MATERIAL_SELECTOR_HEIGHT;
+	const float available_size_ratio = ctx->window_w / (float)framebuffer_available_height;
+	const float grid_ratio = GRID_WIDTH / (float)GRID_HEIGHT;
+
+	if(available_size_ratio < grid_ratio) {
+		ctx->framebuffer_pixel_size_ratio = ctx->window_w / (float)GRID_WIDTH;
+		ctx->framebuffer_rect.x = 0.0f;
+		ctx->framebuffer_rect.y = (float)(framebuffer_available_height - GRID_HEIGHT * ctx->framebuffer_pixel_size_ratio) * 0.5f;
+	} else {
+		ctx->framebuffer_pixel_size_ratio = framebuffer_available_height / (float)GRID_HEIGHT;
+		ctx->framebuffer_rect.x = (float)(ctx->window_w - GRID_WIDTH * ctx->framebuffer_pixel_size_ratio) * 0.5f;
+		ctx->framebuffer_rect.y = 0.0f;
+	}
+
+	ctx->framebuffer_rect.w = GRID_WIDTH * ctx->framebuffer_pixel_size_ratio;
+	ctx->framebuffer_rect.h = GRID_HEIGHT * ctx->framebuffer_pixel_size_ratio;
+}
+
+static void handle_key_event(GameContext *const ctx, const SDL_Event *const event) {
+	switch(event->key.keysym.sym) {
+	case SDLK_r:
+		grid_init(ctx->cells);
+		ctx->simulation.queue_clear_cells = true;
+		break;
+	case SDLK_ESCAPE:
+		ctx->is_paused = !ctx->is_paused;
+		break;
+	case SDLK_RETURN:
+		ctx->simulation.queue_step = true;
+	}
 }

@@ -14,7 +14,7 @@ inline bool point_is_valid(const Point p) {
 	return p.x >= 0 && p.x < GRID_WIDTH && p.y >= 0 && p.y < GRID_HEIGHT;
 }
 
-inline bool point_compare(const Point a, const Point b) {
+inline bool point_equals(const Point a, const Point b) {
 	return a.x == b.x && a.y == b.y;
 }
 

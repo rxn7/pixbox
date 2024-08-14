@@ -3,7 +3,8 @@
 #include "material.h"
 
 typedef struct {
-	uint8_t age;
+	uint32_t age;
+	uint32_t death_age;
 } GasData;
 
 typedef struct {

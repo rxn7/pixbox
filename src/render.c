@@ -1,5 +1,4 @@
 #include "render.h"
-
 #include <SDL_assert.h>
 
 const float SQRT2_INV = 35.0f / 19.0f;
