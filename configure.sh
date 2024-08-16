@@ -1,6 +1,6 @@
 #!/bin/sh
 
-COMMON_FLAGS = -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_C_COMPILER=/usr/bin/gcc -GNinja .
+COMMON_FLAGS="-DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_C_COMPILER=/usr/bin/gcc -GNinja ."
 
 cmake -Bbuild/debug -DCMAKE_BUILD_TYPE=Debug $COMMON_FLAGS
 cmake -Bbuild/release -DCMAKE_BUILD_TYPE=Release $COMMON_FLAGS
@@ -14,5 +14,3 @@ if command -v x86_64-w64-mingw32-cmake &> /dev/null ; then
 else
 	echo "x86_64-w64-mingw32-cmake not found. Windows builds will not be created!"
 fi
-
-cp build/debug/compile_commands.json .
