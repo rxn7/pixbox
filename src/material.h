@@ -1,10 +1,15 @@
 #pragma once
 
 #include "color.h"
-
+#include "point.h"
 #include <stdint.h>
 
-typedef enum {
+struct Material;
+struct Cell;
+struct Simulation;
+typedef void (*SimulateFunc)(struct Simulation *const sim, struct Cell *const cell, const struct Material *const material, const Point p);
+
+typedef enum MaterialID {
 	ID_EMPTY = 0,
 	ID_SAND,
 	ID_WATER,
@@ -19,24 +24,26 @@ typedef enum {
 
 #define MATERIAL_COUNT (MATERIAL_ID_LAST - 1)
 
-typedef enum { POWDER = 1 << 0, SOLID = 1 << 1, FLUID = 1 << 2, LIQUID = 1 << 3, GAS = 1 << 4, PLASMA = 1 << 5 } MaterialType;
+typedef enum { POWDER = 1 << 0, SOLID = 1 << 1, FLUID = 1 << 2, GAS = 1 << 3 } MaterialType;
 
-typedef struct {
+typedef struct GasMaterialData {
+	const bool fade_out;
 	const uint32_t min_death_age;
 	const uint32_t max_death_age;
 } GasMaterialData;
 
-typedef struct {
-	const uint8_t density; // Fluids with higher density will sink below fluids with lower density 
+typedef struct FluidMaterialData {
+	const uint8_t density; // TODO: Fluids with higher density will sink below fluids with lower density 
 } FluidMaterialData;
 
-typedef struct {
+typedef struct SolidMaterialData {
 } SolidMaterialData;
 
-typedef struct {
+typedef struct Material {
 	const MaterialID id;
 	const char *name;
 	const MaterialType type;
+	const SimulateFunc simulate;
 	const Color color_palette[8];
 
 	union {

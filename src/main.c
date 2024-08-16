@@ -226,7 +226,7 @@ static void render_cells(GameContext *const ctx) {
 
 			Color color = material->color_palette[cell->color_idx];
 
-			if(material->type == GAS) {
+			if(material->type == GAS && material->gas.fade_out) {
 				if(cell->gas.age >= cell->gas.death_age) {
 					continue;
 				}

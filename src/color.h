@@ -2,7 +2,7 @@
 
 #include <stdint.h>
 
-typedef struct {
+typedef struct Color {
 	uint8_t rgb[3];
 } Color;
 

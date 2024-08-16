@@ -2,7 +2,7 @@
 
 #include <stdint.h>
 
-typedef struct {
+typedef struct PerformanceStats {
 	uint64_t frame_count;
 	uint64_t frame_time_ns;
 	uint64_t target_simulation_step_times_ns;

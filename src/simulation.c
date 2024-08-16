@@ -12,9 +12,7 @@ static const uint32_t TARGET_STEPS_PER_SECOND = 120;
 static const float SECONDS_PER_STEP = 1.0f / TARGET_STEPS_PER_SECOND;
 
 static int32_t simulation_loop(void *data);
-static void simulate_gas(Simulation *const sim, Cell *const cell, const Material *const material, const Point p);
-static void simulate_powder(Simulation *const sim, Cell *const cell, const Material *const material, const Point p);
-static void simulate_fluid(Simulation *const sim, Cell *const cell, const Material *const material, const Point p);
+static void simulate_cells(Simulation *const sim);
 static void move_cell(Simulation *const sim, const Point from, const Point to);
 static void handle_queued_action(GameContext *const ctx, Cells cells);
 
@@ -43,7 +41,7 @@ int32_t simulation_loop(void *data) {
 		memset(sim->update_map, 0, sizeof(sim->update_map));
 
 		SDL_LockMutex(ctx->cells_mutex);
-		memcpy(sim->new_cells, ctx->cells, sizeof(Cells));
+		memcpy(sim->new_cells, ctx->cells, sizeof(Cells)); // TODO: Swap instead of copying
 
 		if(sim->queue_clear_cells) {
 			for(uint32_t y = 0; y < GRID_HEIGHT; ++y) {
@@ -64,39 +62,7 @@ int32_t simulation_loop(void *data) {
 			}
 		}
 
-		for(PointComponent y = GRID_HEIGHT - 1; y >= 0; y--) {
-			for(PointComponent i = 0; i < GRID_WIDTH; ++i) {
-				PointComponent x = sim->odd_step ? (GRID_WIDTH - i - 1) : i;
-
-				if(sim->update_map[y][x]) {
-					continue;
-				}
-
-				sim->update_map[y][x] = true;
-
-				Point point = { x, y };
-				Cell *const cell = CELL_AT_POINT(sim->new_cells, point);
-
-				if(cell->material_id == ID_EMPTY) {
-					continue;
-				}
-				const Material *material = material_from_id(cell->material_id);
-
-				switch(material->type) {
-				case FLUID:
-					simulate_fluid(sim, cell, material, point);
-					break;
-				case POWDER:
-					simulate_powder(sim, cell, material, point);
-					break;
-				case GAS:
-					simulate_gas(sim, cell, material, point);
-					break;
-				default:
-					break;
-				}
-			}
-		}
+		simulate_cells(sim);
 
 	end_step:
 		memcpy(ctx->cells, sim->new_cells, sizeof(Cells));
@@ -116,17 +82,61 @@ int32_t simulation_loop(void *data) {
 	return 0;
 }
 
-static void simulate_gas(Simulation *const sim, Cell *const cell, const Material *const material, const Point p) {
+static void simulate_cells(Simulation *const sim) {
+	for(PointComponent y = GRID_HEIGHT - 1; y >= 0; y--) {
+		for(PointComponent i = 0; i < GRID_WIDTH; ++i) {
+			PointComponent x = sim->odd_step ? (GRID_WIDTH - i - 1) : i;
+
+			if(sim->update_map[y][x]) {
+				continue;
+			}
+
+			sim->update_map[y][x] = true;
+
+			Point point = { x, y };
+			Cell *const cell = CELL_AT_POINT(sim->new_cells, point);
+
+			if(cell->material_id == ID_EMPTY) {
+				continue;
+			}
+
+			const Material *const material = material_from_id(cell->material_id);
+			if(material->simulate == nullptr) {
+				switch(material->type) {
+					case FLUID:
+						simulate_fluid(sim, cell, material, point);
+						break;
+					case GAS:
+						simulate_gas(sim, cell, material, point);
+						break;
+					case POWDER:
+						simulate_powder(sim, cell, material, point);
+						break;
+				}
+			} else {
+				material->simulate(sim, cell, material, point);
+			}
+		}
+	}
+}
+
+SimulateResult simulate_gas(Simulation *const sim, Cell *const cell, const Material *const material, const Point p) {
 	// TODO: Gas cells should merge with neighbouring gas cells of the same material. (remove this cell and reduce the age of the neighbour.)
 
 	++cell->gas.age;
 	if(cell->gas.age >= cell->gas.death_age) {
 		grid_create_cell(sim->new_cells, p, ID_EMPTY);
-		return;
+		return (SimulateResult){
+			.cell = cell,
+			.point = p
+		};
 	}
 
 	if(p.y == 0) {
-		return;
+		return (SimulateResult){
+			.cell = cell,
+			.point = p
+		};
 	}
 
 	Point target_point = (Point){ p.x, p.y - 1 };
@@ -134,33 +144,50 @@ static void simulate_gas(Simulation *const sim, Cell *const cell, const Material
 
 	if(material_below == nullptr) { // TODO: Different densities etc.
 		move_cell(sim, p, target_point);
-		return;
+		return (SimulateResult){
+			.cell = CELL_AT_POINT(sim->new_cells, target_point),
+			.point = target_point
+		};
 	}
 
 	int8_t offset = (int)(round(rand() / (float)RAND_MAX) * 2 - 1);
 	for(uint8_t i = 0; i < 2; ++i) {
-		target_point = (Point){ p.x + offset, p.y - 1 };
+		target_point = (Point){ p.x + offset, p.y - i };
 		const MaterialID new_point_material_id = CELL_AT_POINT(sim->ctx->cells, target_point)->material_id;
 		if(p.x + offset >= 0 && p.x + offset < GRID_WIDTH && (new_point_material_id == ID_EMPTY)) {
 			move_cell(sim, p, target_point);
-			return;
+			return (SimulateResult){
+				.cell = CELL_AT_POINT(sim->new_cells, target_point),
+				.point = target_point
+			};
 		}
 
 		offset *= -1;
 	}
+
+	return (SimulateResult){
+		.cell = cell,
+		.point = p
+	};
 }
 
-static void simulate_powder(Simulation *const sim, Cell *const cell, const Material *const material, const Point p) {
+SimulateResult simulate_powder(Simulation *const sim, Cell *const cell, const Material *const material, const Point p) {
 	if(p.y >= GRID_HEIGHT - 1) {
-		return;
+		return (SimulateResult){
+			.cell = cell,
+			.point = p
+		};
 	}
 
 	Point target_point = (Point){ p.x, p.y + 1 };
 	const Material *const material_below = material_from_id(CELL_AT_POINT(sim->ctx->cells, target_point)->material_id);
 
 	if(material_below == nullptr) { // TODO: Different densities etc.
-		move_cell(sim, p, target_point);
-		return;
+		move_cell(sim, p, target_point);	
+		return (SimulateResult){
+			.cell = CELL_AT_POINT(sim->new_cells, target_point),
+			.point = target_point
+		};
 	}
 
 	int8_t offset = (int)(round(rand() / (float)RAND_MAX) * 2 - 1);
@@ -169,16 +196,27 @@ static void simulate_powder(Simulation *const sim, Cell *const cell, const Mater
 		const MaterialID new_point_material_id = CELL_AT_POINT(sim->ctx->cells, target_point)->material_id;
 		if(p.x + offset >= 0 && p.x + offset < GRID_WIDTH && (new_point_material_id == ID_EMPTY || new_point_material_id == ID_WATER)) {
 			move_cell(sim, p, target_point);
-			return;
+			return (SimulateResult){
+				.cell = CELL_AT_POINT(sim->new_cells, target_point),
+				.point = target_point
+			};
 		}
 
 		offset *= -1;
 	}
+
+	return (SimulateResult){
+		.cell = cell,
+		.point = p
+	};
 }
 
-static void simulate_fluid(Simulation *const sim, Cell *const cell, const Material *const material, const Point p) {
+SimulateResult simulate_fluid(Simulation *const sim, Cell *const cell, const Material *const material, const Point p) {
 	if(p.y >= GRID_HEIGHT - 1) {
-		return;
+		return (SimulateResult){
+			.cell = cell,
+			.point = p
+		};
 	}
 
 	Point target_point = (Point){ p.x, p.y + 1 };
@@ -186,7 +224,10 @@ static void simulate_fluid(Simulation *const sim, Cell *const cell, const Materi
 
 	if(material_below == nullptr) { // TODO: Different densities etc.
 		move_cell(sim, p, target_point);
-		return;
+		return (SimulateResult){
+			.cell = CELL_AT_POINT(sim->new_cells, target_point),
+			.point = p
+		};
 	}
 
 	int8_t offset = (int)(round(rand() / (float)RAND_MAX) * 2 - 1);
@@ -196,7 +237,10 @@ static void simulate_fluid(Simulation *const sim, Cell *const cell, const Materi
 
 		if(p.x + offset >= 0 && p.x + offset < GRID_WIDTH && new_point_material_id == ID_EMPTY) {
 			move_cell(sim, p, target_point);
-			return;
+			return (SimulateResult){
+				.cell = CELL_AT_POINT(sim->new_cells, target_point),
+				.point = p
+			};
 		}
 
 		offset *= -1;
@@ -208,11 +252,19 @@ static void simulate_fluid(Simulation *const sim, Cell *const cell, const Materi
 
 		if(p.x + offset >= 0 && p.x + offset < GRID_WIDTH && new_point_material_id == ID_EMPTY) {
 			move_cell(sim, p, target_point);
-			return;
+			return (SimulateResult){
+				.cell = CELL_AT_POINT(sim->new_cells, target_point),
+				.point = p
+			};
 		}
 
 		offset *= -1;
 	}
+
+	return (SimulateResult){
+		.cell = cell,
+		.point = p
+	};
 }
 
 static void move_cell(Simulation *const sim, const Point from, const Point to) {

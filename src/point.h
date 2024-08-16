@@ -5,7 +5,7 @@
 
 typedef int16_t PointComponent;
 
-typedef struct {
+typedef struct Point {
 	PointComponent x;
 	PointComponent y;
 } Point;

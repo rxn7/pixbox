@@ -13,12 +13,12 @@
 
 typedef struct GameContext GameContext;
 
-typedef struct {
+typedef struct MaterialSelectorEntry {
 	const Material *material;
 	SDL_Texture *icon_texture;
 } MaterialSelectorEntry;
 
-typedef struct {
+typedef struct MaterialSelector {
 	MaterialSelectorEntry entries[MATERIAL_COUNT];
 	MaterialSelectorEntry *hovered_entry;
 	SDL_Texture *text_texture;

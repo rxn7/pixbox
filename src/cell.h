@@ -2,18 +2,18 @@
 
 #include "material.h"
 
-typedef struct {
+typedef struct GasData {
 	uint32_t age;
 	uint32_t death_age;
 } GasData;
 
-typedef struct {
+typedef struct FluidData {
 } FluidData;
 
-typedef struct {
+typedef struct SolidData {
 } SolidData;
 
-typedef struct {
+typedef struct Cell {
 	MaterialID material_id : 4;// 0-16
 	uint8_t color_idx : 3;	   // 0-8
 	union {
